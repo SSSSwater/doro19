@@ -1,7 +1,11 @@
 from pathlib import Path
 import shutil
 
-from PIL import Image, ImageOps
+try:
+    from PIL import Image, ImageOps
+except ModuleNotFoundError:
+    Image = None
+    ImageOps = None
 
 
 ROOT = Path(__file__).resolve().parents[1] / "doro_bq"
@@ -32,6 +36,21 @@ def main() -> None:
         for source in ROOT.iterdir()
         if source.is_file() and source.suffix.lower() in RASTER_EXTENSIONS | VECTOR_EXTENSIONS
     )
+
+    if Image is None:
+        missing = []
+        for source in sources:
+            target = OUTPUT / (source.name if source.suffix.lower() in VECTOR_EXTENSIONS else f"{source.stem}.webp")
+            if not target.exists():
+                missing.append(target.name)
+        if missing:
+            raise SystemExit(
+                "Pillow is unavailable and optimized sticker assets are missing: "
+                + ", ".join(missing)
+            )
+        print("Pillow is unavailable; using committed optimized sticker assets")
+        return
+
     expected_outputs = set()
 
     for source in sources:

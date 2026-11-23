@@ -2,6 +2,6 @@
 !.env.example
 node_modules/
 dist/
-doro_bq/optimized/
 .chrome-qa-profile/
+__pycache__/
 save/
