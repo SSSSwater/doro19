@@ -4,6 +4,60 @@ import { copy, cssMotionVariables, formatText, motion, timing } from './config'
 import './styles.css'
 
 const supportedStickerPattern = /\.(png|jpe?g|webp|gif|avif|svg)$/i
+
+const formatClientError = error => {
+  if (!error) return '未知错误'
+  const lines = []
+  if (error.name || error.message) lines.push(`${error.name || 'Error'}: ${error.message || '未知错误'}`)
+  if (error.status) lines.push(`status: ${error.status}`)
+  if (error.cause) {
+    const cause = error.cause
+    lines.push(`cause: ${cause?.name || 'Error'}: ${cause?.message || String(cause)}`)
+    if (cause?.code) lines.push(`cause.code: ${cause.code}`)
+  }
+  if (error.stack) lines.push(error.stack)
+  return lines.join('\n').slice(0, 4000) || String(error)
+}
+
+function DebugErrorPopup({ error, onClose }) {
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [onClose])
+
+  const copyDetails = async () => {
+    const text = `${error.title}\n时间：${error.timestamp}\n\n${error.details}`
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="debug-error-backdrop" role="presentation" onPointerDown={event => { if (event.target === event.currentTarget) onClose() }}>
+      <section className="debug-error-dialog" role="alertdialog" aria-modal="true" aria-labelledby="debug-error-title">
+        <button className="debug-error-close" type="button" aria-label="关闭错误弹窗" onClick={onClose}>×</button>
+        <p className="debug-error-kicker">DEBUG ERROR</p>
+        <h2 id="debug-error-title">{error.title}</h2>
+        <p className="debug-error-time">发生时间：{error.timestamp}</p>
+        <pre className="debug-error-details">{error.details}</pre>
+        <div className="debug-error-actions">
+          <button type="button" className="debug-error-copy" onClick={copyDetails}>{copied ? '已复制' : '复制错误信息'}</button>
+          <button type="button" className="debug-error-confirm" onClick={onClose}>关闭</button>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 const loadedStickerImages = Object.entries(import.meta.glob('../doro_bq/optimized/*', { eager: true, query: '?url', import: 'default' }))
   .filter(([id]) => supportedStickerPattern.test(id))
   .map(([id, src]) => ({ id, src }))
@@ -619,6 +673,7 @@ function App() {
   const [wishText, setWishText] = useState('')
   const [wishSaving, setWishSaving] = useState(false)
   const [wishSaveError, setWishSaveError] = useState('')
+  const [debugError, setDebugError] = useState(null)
   const [wishSequence, setWishSequence] = useState(0)
   const [blowProgress, setBlowProgress] = useState(0)
   const [candleBlowPhase, setCandleBlowPhase] = useState('lit')
@@ -695,6 +750,7 @@ function App() {
   const buttonPressRef = useRef(null)
   const cancelledButtonRef = useRef(null)
   const wishSubmittingRef = useRef(false)
+  const debugErrorSequenceRef = useRef(0)
   const blowHoldRef = useRef(null)
   const blackoutTimerRef = useRef(null)
   const collectedCount = collectedIds.size
@@ -707,6 +763,32 @@ function App() {
   const [collectionOpen, setCollectionOpen] = useState(false)
   const totalResources = stickerImages.length + 1
   const loadingProgress = Math.min(100, Math.round(loadedResources / totalResources * 100))
+
+  const showDebugError = (title, details) => {
+    debugErrorSequenceRef.current += 1
+    setDebugError({
+      id: debugErrorSequenceRef.current,
+      title,
+      details: String(details || '未知错误').slice(0, 4000),
+      timestamp: new Date().toLocaleString('zh-CN', { hour12: false }),
+    })
+  }
+
+  useEffect(() => {
+    const handleError = event => {
+      if (event.error) showDebugError('页面发生错误', formatClientError(event.error))
+    }
+    const handleUnhandledRejection = event => {
+      showDebugError('异步操作发生错误', formatClientError(event.reason))
+      event.preventDefault()
+    }
+    window.addEventListener('error', handleError)
+    window.addEventListener('unhandledrejection', handleUnhandledRejection)
+    return () => {
+      window.removeEventListener('error', handleError)
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+    }
+  }, [])
 
   useEffect(() => () => {
     window.clearTimeout(wishDialogTimerRef.current)
@@ -1219,19 +1301,37 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ wish }),
       })
-      if (!response.ok) throw new Error(copy.wishSaveFailed)
+      const rawResponse = await response.text()
+      let payload = null
+      try {
+        payload = rawResponse ? JSON.parse(rawResponse) : null
+      } catch {
+        payload = null
+      }
+      if (!response.ok) {
+        const requestError = new Error(payload?.error || copy.wishSaveFailed)
+        requestError.status = response.status
+        requestError.debugDetails = [
+          '请求：POST /api/wishes',
+          `HTTP：${response.status}${response.statusText ? ` ${response.statusText}` : ''}`,
+          payload?.debug ? `服务端调试信息：\n${payload.debug}` : '',
+          !payload?.debug && rawResponse ? `响应内容：\n${rawResponse.slice(0, 1200)}` : '',
+        ].filter(Boolean).join('\n\n')
+        throw requestError
+      }
       updateIntroMessage(copy.wishSent)
       window.clearTimeout(candleReadyTimerRef.current)
       candleReadyTimerRef.current = window.setTimeout(() => {
         candleReadyTimerRef.current = null
         setCandleBlowReady(true)
       }, timing.wishCandleReadyMs)
-    } catch {
+    } catch (error) {
       window.clearTimeout(wishDialogTimerRef.current)
       wishDialogTimerRef.current = null
       setWishDialogPhase('open')
       setWishText(wish)
       setWishSaveError(copy.wishSaveFailed)
+      showDebugError('愿望发送失败', error?.debugDetails || formatClientError(error))
     } finally {
       wishSubmittingRef.current = false
       setWishSaving(false)
@@ -1646,6 +1746,7 @@ function App() {
           <span className="pill-art bucket-hairclip" />
         </div>
       </>}
+      {debugError && <DebugErrorPopup key={debugError.id} error={debugError} onClose={() => setDebugError(null)} />}
     </main>
   )
 }

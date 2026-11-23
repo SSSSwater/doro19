@@ -10,6 +10,18 @@ function json(body, status = 200) {
   })
 }
 
+function errorDetails(error) {
+  const lines = []
+  if (error?.name || error?.message) lines.push(`${error.name || 'Error'}: ${error.message || '未知错误'}`)
+  if (error?.code) lines.push(`code: ${error.code}`)
+  if (error?.cause) {
+    const cause = error.cause
+    lines.push(`cause: ${cause?.name || 'Error'}: ${cause?.message || String(cause)}`)
+    if (cause?.code) lines.push(`cause.code: ${cause.code}`)
+  }
+  return lines.join('\n').slice(0, 1200) || '未知服务端错误'
+}
+
 export async function onRequestPost({ request, env }) {
   if (!request.headers.get('content-type')?.startsWith('application/json')) {
     return json({ error: '请求格式不正确' }, 415)
@@ -35,7 +47,10 @@ export async function onRequestPost({ request, env }) {
   } catch (error) {
     const status = error instanceof WishEmailError ? error.status : 500
     if (!(error instanceof WishEmailError)) console.error('Failed to send wish email:', error)
-    return json({ error: error instanceof WishEmailError ? error.message : '愿望发送失败，请稍后再试' }, status)
+    return json({
+      error: error instanceof WishEmailError ? error.message : '愿望发送失败，请稍后再试',
+      debug: error instanceof WishEmailError ? (error.details || error.message) : errorDetails(error),
+    }, status)
   }
 }
 

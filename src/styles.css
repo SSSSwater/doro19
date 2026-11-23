@@ -423,6 +423,23 @@ h1 {
 .wish-dialog-close:focus-visible,
 .wish-dialog-submit:focus,
 .wish-dialog-submit:focus-visible { outline: none !important; -webkit-focus-ring-color: transparent; }
+.debug-error-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; overflow-y: auto; padding: 20px; background: #1e2928c7; backdrop-filter: blur(7px); animation: debug-error-backdrop-in .2s ease-out both; }
+.debug-error-dialog { position: relative; width: min(680px, 100%); max-height: min(82dvh, 700px); overflow: auto; padding: 30px 28px 24px; border: 1px solid #f3d7dc; border-radius: 22px; background: linear-gradient(145deg, #fffdfb, #f5f8f1); box-shadow: 0 25px 70px #111d1a80, inset 0 0 0 1px #c4d8c6; color: #465d50; animation: debug-error-dialog-in .25s cubic-bezier(.18,.78,.23,1.15) both; }
+.debug-error-close { position: absolute; top: 12px; right: 15px; width: 33px; height: 33px; padding: 0; border: 0; border-radius: 50%; background: #ffffffb8; color: #7b8880; font-family: Arial, sans-serif; font-size: 26px; line-height: 1; cursor: pointer; }
+.debug-error-close:hover { background: #f6e4e9; color: #af7187; }
+.debug-error-kicker { margin: 0 0 5px; color: #b45d72; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 11px; font-weight: 700; letter-spacing: .15em; }
+.debug-error-dialog h2 { margin: 0; padding-right: 34px; color: #684d57; font-size: 22px; line-height: 1.35; }
+.debug-error-time { margin: 7px 0 15px; color: #8c9a91; font-size: 12px; }
+.debug-error-details { max-height: min(43dvh, 360px); margin: 0; padding: 14px 15px; overflow: auto; border: 1px solid #d6bfc4; border-radius: 12px; background: #263331e8; color: #f4f7ed; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.debug-error-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.debug-error-actions button { min-height: 40px; padding: 7px 16px; border-radius: 999px; cursor: pointer; }
+.debug-error-copy { border: 1px solid #b9d2bd; background: #edf6ed; color: #55705c; }
+.debug-error-confirm { border: 1px solid #d49aaa; background: #f1cbd6; color: #875e6e; }
+.debug-error-actions button:hover { transform: translateY(-1px); filter: brightness(.98); }
+.debug-error-close:focus,
+.debug-error-close:focus-visible,
+.debug-error-actions button:focus,
+.debug-error-actions button:focus-visible { outline: 2px solid #9dbda3; outline-offset: 2px; }
 .paper-open-entrance { position: fixed; z-index: 11; left: 50%; bottom: clamp(92px, 14vh, 132px); transform: translateX(-50%); animation: paper-button-in .55s cubic-bezier(.18,.8,.25,1.18) both; }
 .paper-open-button { min-width: 190px; font-size: 18px; background: #fff1db; border-color: #d7bda2; box-shadow: 0 11px 21px #70553e57; color: #806250; touch-action: manipulation; }
 .paper-open-button:hover { background: #ffe8ca; box-shadow: 0 15px 24px #70553e65; transform: translateY(-3px); }
@@ -504,6 +521,8 @@ h1 {
 @keyframes wish-backdrop-out { from { opacity: 1; backdrop-filter: blur(5px); } to { opacity: 0; backdrop-filter: blur(0); } }
 @keyframes wish-dialog-in { from { opacity: 0; transform: translateY(36px) scale(.88); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes wish-dialog-out { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(-120vh) scale(.88); } }
+@keyframes debug-error-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes debug-error-dialog-in { from { opacity: 0; transform: translateY(20px) scale(.94); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
 @keyframes cake-entrance { from { opacity: 0; transform: translateY(25px) scale(.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes cake-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
@@ -569,6 +588,7 @@ h1 {
   .page-shell::before, .page-shell::after { transition: none; }
   .page-shell.cut-glitch::before { animation-duration: .01ms; }
   .wish-dialog-backdrop, .wish-dialog-backdrop.is-closing, .wish-dialog, .wish-dialog-backdrop.is-closing .wish-dialog { animation: none; }
+  .debug-error-backdrop, .debug-error-dialog { animation: none; }
   .loading-enter-button, .wish-button, .test-cake-button, .candle, .collection-toolbar, .collection-wish-button, .collection-more, .collection-close, .wish-dialog-close, .wish-dialog-submit, .cut-knife, .cut-choice-buttons, .cut-choice-button, .paper-open-entrance, .paper-open-button, .paper-backdrop, .paper-sheet, .doro-hidden-note, .doro-cut-half, .doro-jam-edge, .doro-jam-drip-edge { transition: none; animation: none; }
   .cut-phase-knife .cut-knife, .cut-phase-ready .cut-knife, .cut-phase-holding .cut-knife, .cut-phase-warning .cut-knife { opacity: 1; visibility: visible; }
   .cut-phase-knife-moving .cut-knife { visibility: visible; transform: translate(0, 0); }

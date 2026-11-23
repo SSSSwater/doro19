@@ -1,10 +1,11 @@
 const MAX_WISH_LENGTH = 200
 
 export class WishEmailError extends Error {
-  constructor(message, status = 500) {
+  constructor(message, status = 500, details = '') {
     super(message)
     this.name = 'WishEmailError'
     this.status = status
+    this.details = details
   }
 }
 
@@ -31,7 +32,12 @@ function receivedAt() {
 export async function sendWishEmail({ wish, apiKey, recipient, from, fetchImpl = fetch }) {
   const normalizedWish = validateWish(wish)
   if (!apiKey || !recipient || !from) {
-    throw new WishEmailError('邮件服务尚未配置', 503)
+    const missing = [
+      !apiKey && 'RESEND_API_KEY',
+      !recipient && 'WISH_RECIPIENT_EMAIL',
+      !from && 'WISH_FROM_EMAIL',
+    ].filter(Boolean)
+    throw new WishEmailError('邮件服务尚未配置', 503, `缺少环境变量：${missing.join('、')}`)
   }
 
   const response = await fetchImpl('https://api.resend.com/emails', {
@@ -51,7 +57,11 @@ export async function sendWishEmail({ wish, apiKey, recipient, from, fetchImpl =
   if (!response.ok) {
     const details = await response.text().catch(() => '')
     console.error('Resend rejected wish email:', response.status, details.slice(0, 500))
-    throw new WishEmailError('愿望发送失败，请稍后再试', 502)
+    throw new WishEmailError(
+      '愿望发送失败，请稍后再试',
+      502,
+      `Resend HTTP ${response.status}${details ? `\n${details.slice(0, 500)}` : ''}`,
+    )
   }
 
   return response.json().catch(() => ({}))
