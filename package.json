@@ -1,0 +1,24 @@
+{
+  "name": "doro-birthday",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "optimize:stickers": "python scripts/optimize-stickers.py",
+    "dev": "npm run optimize:stickers && vite --host 0.0.0.0 --port 5173 --strictPort",
+    "build": "npm run optimize:stickers && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "preview:public": "vite preview --host 0.0.0.0 --port 5173 --strictPort",
+    "preview:tunnel": "vite preview --host 127.0.0.1 --port 4173 --strictPort"
+  },
+  "dependencies": {
+    "@fontsource/dancing-script": "5.3.0",
+    "@fontsource/zcool-kuaile": "5.3.0",
+    "@fontsource/zen-maru-gothic": "5.3.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "vite": "^7.2.0"
+  }
+}

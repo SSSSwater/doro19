@@ -1,0 +1,6 @@
+/* 字体来自本地 npm 字体包，部署后由当前网站提供，不请求 Google Fonts。 */
+@import '@fontsource/zcool-kuaile/chinese-simplified-400.css';
+@import '@fontsource/zcool-kuaile/latin-400.css';
+@import '@fontsource/zen-maru-gothic/japanese-700.css';
+@import '@fontsource/zen-maru-gothic/latin-700.css';
+@import '@fontsource/dancing-script/latin-500.css';

@@ -1,0 +1,7 @@
+.env.*
+!.env.example
+node_modules/
+dist/
+doro_bq/optimized/
+.chrome-qa-profile/
+save/
