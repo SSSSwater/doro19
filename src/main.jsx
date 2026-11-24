@@ -113,9 +113,24 @@ const earOutline = 'M38 75 C44 55 54 25 62 3 C72 21 80 43 86 47 L79 76Z'
 const earInner = 'M52 57 C55 44 59 26 62 12 C69 25 76 39 80 43Z'
 const ovalPath = (x, y, rx, ry) => `M${x + rx} ${y}a${rx} ${ry} 0 1 0 ${-2 * rx} 0a${rx} ${ry} 0 1 0 ${2 * rx} 0Z`
 const sampledPaths = new Map()
+const bgmBandCount = 16
 
-function warpedPath(pathData, deformation, mirror = false) {
-  if (!deformation || (!deformation.dx && !deformation.dy)) return pathData
+const radialPulseAt = (x, y, bands) => {
+  if (!bands) return { dx: 0, dy: 0 }
+  const radialX = x - 110
+  const radialY = y - 111
+  const radius = Math.hypot(radialX, radialY)
+  if (radius < 1) return { dx: 0, dy: 0 }
+  const sector = (Math.atan2(radialY, radialX) + Math.PI) / (2 * Math.PI) * bands.length
+  const first = Math.floor(sector) % bands.length
+  const blend = sector - Math.floor(sector)
+  const level = bands[first] * (1 - blend) + bands[(first + 1) % bands.length] * blend
+  const distance = 9 * level * Math.min(radius / 75, 1)
+  return { dx: radialX / radius * distance, dy: radialY / radius * distance }
+}
+
+function warpedPath(pathData, deformation, mirror = false, audioBands = null) {
+  if ((!deformation || (!deformation.dx && !deformation.dy)) && !audioBands) return pathData
   if (!sampledPaths.has(pathData)) {
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
     path.setAttribute('d', pathData)
@@ -125,34 +140,36 @@ function warpedPath(pathData, deformation, mirror = false) {
   }
   const points = sampledPaths.get(pathData)
   const influence = point => {
+    if (!deformation) return 0
     const px = mirror ? 220 - point.x : point.x
     const distance = Math.hypot(px - deformation.x, point.y - deformation.y)
     const t = Math.max(0, 1 - distance / 82)
     return t * t * (3 - 2 * t)
   }
-  if (!points.some(point => influence(point) > 0)) return pathData
   return points.map((point, index) => {
     const weight = influence(point)
-    return `${index ? 'L' : 'M'}${(point.x + deformation.dx * weight * (mirror ? -1 : 1)).toFixed(2)} ${(point.y + deformation.dy * weight).toFixed(2)}`
+    const pulse = radialPulseAt(mirror ? 220 - point.x : point.x, point.y, audioBands)
+    const mirrorSign = mirror ? -1 : 1
+    return `${index ? 'L' : 'M'}${(point.x + ((deformation?.dx || 0) * weight + pulse.dx) * mirrorSign).toFixed(2)} ${(point.y + (deformation?.dy || 0) * weight + pulse.dy).toFixed(2)}`
   }).join('') + (/z\s*$/i.test(pathData) ? 'Z' : '')
 }
 
-function DoroEar({ side, deformation }) {
+function DoroEar({ side, deformation, audioBands }) {
   const mirror = side === 'right'
   return (
     <g className={`doro-ear-${side}`} transform={side === 'right' ? 'translate(220 0) scale(-1 1)' : undefined}>
-      <path d={warpedPath(earOutline, deformation, mirror)} fill="#fffdf9" />
-      <path d={warpedPath(earInner, deformation, mirror)} fill="#ffe9aa" />
+      <path d={warpedPath(earOutline, deformation, mirror, audioBands)} fill="#fffdf9" />
+      <path d={warpedPath(earInner, deformation, mirror, audioBands)} fill="#ffe9aa" />
     </g>
   )
 }
 
-function DoroFaceArtwork({ deformation }) {
-  const face = path => warpedPath(path, deformation)
+function DoroFaceArtwork({ deformation, audioBands = null }) {
+  const face = path => warpedPath(path, deformation, false, audioBands)
   return (
     <>
-      <DoroEar side="left" deformation={deformation} />
-      <DoroEar side="right" deformation={deformation} />
+      <DoroEar side="left" deformation={deformation} audioBands={audioBands} />
+      <DoroEar side="right" deformation={deformation} audioBands={audioBands} />
       <path d={face(faceOutline)} fill="#fffdf9" />
       <path d={face(faceShade)} fill="#bdbab4" opacity=".2" />
       <path d={face('M40 76q19-3 38 0')} fill="none" stroke="#111715" strokeWidth="5.5" strokeLinecap="round" />
@@ -382,16 +399,45 @@ function FallingStickers({ bucketRef, onCollect, collectEnabled, isComplete, pil
 const resistedPull = (distance, strength) =>
   Math.sign(distance) * strength * Math.log1p(Math.abs(distance) / 24)
 
-function Cake({ wishMade, collectedCount, showDoro, candleVisible, candleFlyingAway, isRevealing, showDoroHints, doroSqueezeCount, onDoroSqueeze, isCut, noteDropped }) {
+function Cake({ wishMade, collectedCount, showDoro, candleVisible, candleFlyingAway, isRevealing, showDoroHints, doroSqueezeCount, onDoroSqueeze, isCut, noteDropped, bgmAnalyser }) {
   const digits = String(collectedCount).split('')
   const candlePositions = digits.map((_, index) => 310 + (index - (digits.length - 1) / 2) * (digits.length > 2 ? 38 : 50))
   const [deformation, setDeformation] = useState(null)
+  const [audioBands, setAudioBands] = useState(null)
   const [dragTarget, setDragTarget] = useState(null)
   const dragRef = useRef(null)
   const deformationRef = useRef(null)
   const reboundRef = useRef(null)
 
   useEffect(() => () => window.cancelAnimationFrame(reboundRef.current), [])
+
+  useEffect(() => {
+    if (!bgmAnalyser || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined
+    const frequencies = new Uint8Array(bgmAnalyser.frequencyBinCount)
+    const smoothed = new Float32Array(bgmBandCount)
+    const binWidth = bgmAnalyser.context.sampleRate / bgmAnalyser.fftSize
+    let frameId
+    let lastSample = 0
+    const update = now => {
+      frameId = window.requestAnimationFrame(update)
+      if (now - lastSample < 32) return
+      lastSample = now
+      bgmAnalyser.getByteFrequencyData(frequencies)
+      for (let index = 0; index < bgmBandCount; index += 1) {
+        const low = 55 * (7000 / 55) ** (index / bgmBandCount)
+        const high = 55 * (7000 / 55) ** ((index + 1) / bgmBandCount)
+        const from = Math.min(frequencies.length - 1, Math.max(1, Math.floor(low / binWidth)))
+        const to = Math.min(frequencies.length - 1, Math.max(from, Math.ceil(high / binWidth)))
+        let sum = 0
+        for (let bin = from; bin <= to; bin += 1) sum += frequencies[bin]
+        const level = Math.min(1, Math.sqrt((sum / (to - from + 1)) / 145))
+        smoothed[index] += (level - smoothed[index]) * (level > smoothed[index] ? .42 : .18)
+      }
+      setAudioBands(Array.from(smoothed))
+    }
+    frameId = window.requestAnimationFrame(update)
+    return () => window.cancelAnimationFrame(frameId)
+  }, [bgmAnalyser])
 
   const handleDoroPointerDown = event => {
     if (!showDoro || dragRef.current || (event.pointerType === 'mouse' && event.button !== 0)) return
@@ -510,7 +556,7 @@ function Cake({ wishMade, collectedCount, showDoro, candleVisible, candleFlyingA
         <g className={'doro-head' + (dragTarget ? ' doro-dragging' : '')} transform="translate(164 76) scale(1.34)" filter="url(#cakeShadow)">
           <g className="doro-reveal">
             <g className="doro-squish">
-              <DoroFaceArtwork deformation={deformation} />
+              <DoroFaceArtwork deformation={deformation} audioBands={bgmAnalyser ? audioBands : null} />
             </g>
           </g>
         </g>
@@ -704,6 +750,7 @@ function App() {
   const [introSequence, setIntroSequence] = useState(0)
   const [bgmPromptVisible, setBgmPromptVisible] = useState(false)
   const [bgmFlowComplete, setBgmFlowComplete] = useState(false)
+  const [bgmAnalyser, setBgmAnalyser] = useState(null)
   const [candleFlyingAway, setCandleFlyingAway] = useState(false)
   const [candleGone, setCandleGone] = useState(false)
   const [doroVisible, setDoroVisible] = useState(false)
@@ -724,6 +771,7 @@ function App() {
   const bgmAudioContextRef = useRef(null)
   const bgmAudioBufferPromiseRef = useRef(null)
   const bgmAudioSourceRef = useRef(null)
+  const bgmAnalyserRef = useRef(null)
   const bgmLoadErrorRef = useRef(null)
   const bgmStartTimerRef = useRef(null)
   const bgmFinishTimerRef = useRef(null)
@@ -829,10 +877,12 @@ function App() {
       bgmAudioRef.current?.pause()
       bgmAudioSourceRef.current?.stop()
       bgmAudioSourceRef.current?.disconnect()
+      bgmAnalyserRef.current?.disconnect()
       if (bgmAudioContextRef.current && bgmAudioContextRef.current.state !== 'closed') {
         void bgmAudioContextRef.current.close().catch(() => {})
       }
       bgmAudioSourceRef.current = null
+      bgmAnalyserRef.current = null
       bgmAudioBufferPromiseRef.current = null
       bgmAudioContextRef.current = null
       bgmAudioRef.current = null
@@ -846,6 +896,7 @@ function App() {
     window.clearTimeout(bgmFinishTimerRef.current)
     bgmAudioSourceRef.current?.stop()
     bgmAudioSourceRef.current?.disconnect()
+    bgmAnalyserRef.current?.disconnect()
     window.clearTimeout(loadingDismissTimerRef.current)
     window.clearTimeout(startPromptTimerRef.current)
     window.clearTimeout(titleRevealTimerRef.current)
@@ -907,11 +958,17 @@ function App() {
             if (!buffer) throw bgmLoadErrorRef.current || new Error('bgm.mp3 解码失败')
             if (context.state !== 'running') await context.resume()
             const source = context.createBufferSource()
+            const analyser = context.createAnalyser()
+            analyser.fftSize = 2048
+            analyser.smoothingTimeConstant = .72
             bgmAudioSourceRef.current = source
+            bgmAnalyserRef.current = analyser
             source.buffer = buffer
-            source.connect(context.destination)
+            source.connect(analyser)
+            analyser.connect(context.destination)
             source.onended = () => finishBgmStep()
             source.start()
+            setBgmAnalyser(analyser)
           }
           startDecodedBgm().catch(error => {
             showDebugError('背景音乐播放失败', formatClientError(error))
@@ -955,6 +1012,14 @@ function App() {
   const finishBgmStep = () => {
     if (bgmPlaybackSettledRef.current) return
     bgmPlaybackSettledRef.current = true
+    if (bgmAudioSourceRef.current) {
+      bgmAudioSourceRef.current.onended = null
+      bgmAudioSourceRef.current.disconnect()
+      bgmAudioSourceRef.current = null
+    }
+    bgmAnalyserRef.current?.disconnect()
+    bgmAnalyserRef.current = null
+    setBgmAnalyser(null)
     bgmFinishTimerRef.current = window.setTimeout(() => {
       bgmFinishTimerRef.current = null
       setBgmPromptVisible(false)
@@ -1669,7 +1734,7 @@ function App() {
         <div className="cake-scene">
             <div className="cake-halo" aria-hidden="true" />
             <div className="cake-touch" ref={cakeTouchRef} role="img" aria-label={copy.cakeDragAria}>
-              <Cake wishMade={wishMade} collectedCount={collectedCount} showDoro={showDoro} candleVisible={!candleGone && (revealPhase === 'candle' || revealPhase === 'active')} candleFlyingAway={candleFlyingAway} isRevealing={revealPhase === 'candle'} showDoroHints={doroHintsVisible} doroSqueezeCount={doroSqueezeCount} onDoroSqueeze={handleDoroSqueeze} isCut={doroCut} noteDropped={noteDropped} />
+              <Cake wishMade={wishMade} collectedCount={collectedCount} showDoro={showDoro} candleVisible={!candleGone && (revealPhase === 'candle' || revealPhase === 'active')} candleFlyingAway={candleFlyingAway} isRevealing={revealPhase === 'candle'} showDoroHints={doroHintsVisible} doroSqueezeCount={doroSqueezeCount} onDoroSqueeze={handleDoroSqueeze} isCut={doroCut} noteDropped={noteDropped} bgmAnalyser={bgmAnalyser} />
             </div>
             {showDoro && doroRevealSequence > 0 && (
               <div className="doro-emerge-confetti" aria-hidden="true" key={doroRevealSequence}>
