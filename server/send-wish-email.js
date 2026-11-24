@@ -49,7 +49,7 @@ export async function sendWishEmail({ wish, apiKey, recipient, from, fetchImpl =
     body: JSON.stringify({
       from,
       to: [recipient],
-      subject: 'Doro19 收到一个新的愿望',
+      subject: `接收到一个愿望：${normalizedWish}`,
       text: `收到时间（北京时间）：${receivedAt()}\n\n愿望内容：\n${normalizedWish}\n`,
     }),
   })
