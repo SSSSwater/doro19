@@ -24,6 +24,7 @@ export const copy = {
   doroAppeared: readText('VITE_TEXT_PROMPT_DORO_APPEARED', '一只野生的多罗猫钻了出来！'),
   canSqueezeDoro: readText('VITE_TEXT_PROMPT_CAN_SQUEEZE_DORO', '似乎能捏诶...'),
   readyToWish: readText('VITE_TEXT_PROMPT_READY_TO_WISH', '那么接下来...'),
+  volumePrompt: readText('VITE_TEXT_PROMPT_VOLUME', '打开手机音量看看？'),
   wishSending: readText('VITE_TEXT_PROMPT_WISH_SENDING', '正在发射...'),
   wishSent: readText('VITE_TEXT_PROMPT_WISH_SENT', '发射到天上了！'),
   wishSaveFailed: readText('VITE_TEXT_WISH_SAVE_FAILED', '愿望发送失败，请再试一次。'),
@@ -105,6 +106,8 @@ export const timing = {
   doroAppearanceMs: readMilliseconds('VITE_WAIT_DORO_APPEARANCE_MS', 3000),
   doroHintsAppearanceMs: readMilliseconds('VITE_WAIT_DORO_HINTS_APPEARANCE_MS', 2450),
   doroSqueezePromptMs: readMilliseconds('VITE_WAIT_DORO_SQUEEZE_PROMPT_MS', 5000),
+  bgmStartDelayMs: readMilliseconds('VITE_WAIT_BGM_START_DELAY_MS', 5000),
+  bgmAfterPlayDelayMs: readMilliseconds('VITE_WAIT_BGM_AFTER_PLAY_DELAY_MS', 2000),
 }
 
 export const motion = {

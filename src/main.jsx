@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { copy, cssMotionVariables, formatText, motion, timing } from './config'
+import bgmUrl from '../bgm.mp3'
 import './styles.css'
 
 const supportedStickerPattern = /\.(png|jpe?g|webp|gif|avif|svg)$/i
@@ -701,6 +702,8 @@ function App() {
   const [revealSequence, setRevealSequence] = useState(0)
   const [introMessage, setIntroMessage] = useState(copy.initialPrompt)
   const [introSequence, setIntroSequence] = useState(0)
+  const [bgmPromptVisible, setBgmPromptVisible] = useState(false)
+  const [bgmFlowComplete, setBgmFlowComplete] = useState(false)
   const [candleFlyingAway, setCandleFlyingAway] = useState(false)
   const [candleGone, setCandleGone] = useState(false)
   const [doroVisible, setDoroVisible] = useState(false)
@@ -717,6 +720,15 @@ function App() {
   const paperCloseRef = useRef(null)
   const wishDialogTimerRef = useRef(null)
   const wishOpenTimerRef = useRef(null)
+  const bgmAudioRef = useRef(null)
+  const bgmAudioContextRef = useRef(null)
+  const bgmAudioBufferPromiseRef = useRef(null)
+  const bgmAudioSourceRef = useRef(null)
+  const bgmLoadErrorRef = useRef(null)
+  const bgmStartTimerRef = useRef(null)
+  const bgmFinishTimerRef = useRef(null)
+  const bgmTriggeredRef = useRef(false)
+  const bgmPlaybackSettledRef = useRef(false)
   const wishPointerRef = useRef(null)
   const loadingDismissTimerRef = useRef(null)
   const startPromptTimerRef = useRef(null)
@@ -756,12 +768,12 @@ function App() {
   const collectedCount = collectedIds.size
   const isComplete = revealPhase === 'active' && stickerImages.length > 0 && collectedCount === stickerImages.length
   const showDoro = isComplete && doroVisible
-  const wishReady = showDoro && doroSqueezeCount >= 10 && !cakeRevealed && !wishMade
+  const wishReady = showDoro && doroSqueezeCount >= 10 && bgmFlowComplete && !cakeRevealed && !wishMade
   const actionButtonVisible = wishReady || (showDoro && cakeRevealed && candleBlowReady && !wishMade)
   const contentVisible = revealPhase !== 'idle'
   const cutInteractionVisible = ['knife', 'ready', 'holding', 'knife-moving', 'knife-resting', 'blackout', 'warning'].includes(cutPhase)
   const [collectionOpen, setCollectionOpen] = useState(false)
-  const totalResources = stickerImages.length + 1
+  const totalResources = stickerImages.length + 2
   const loadingProgress = Math.min(100, Math.round(loadedResources / totalResources * 100))
 
   const showDebugError = (title, details) => {
@@ -790,9 +802,50 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext
+    if (AudioContextClass) {
+      const context = new AudioContextClass()
+      bgmAudioContextRef.current = context
+      bgmAudioBufferPromiseRef.current = fetch(bgmUrl)
+        .then(response => {
+          if (!response.ok) throw new Error(`bgm.mp3 请求失败：HTTP ${response.status}`)
+          return response.arrayBuffer()
+        })
+        .then(data => context.decodeAudioData(data))
+        .catch(error => {
+          bgmLoadErrorRef.current = error
+          return null
+        })
+    } else {
+      const audio = new Audio(bgmUrl)
+      audio.preload = 'auto'
+      audio.loop = false
+      bgmAudioRef.current = audio
+      audio.load()
+    }
+
+    return () => {
+      bgmAudioRef.current?.pause()
+      bgmAudioSourceRef.current?.stop()
+      bgmAudioSourceRef.current?.disconnect()
+      if (bgmAudioContextRef.current && bgmAudioContextRef.current.state !== 'closed') {
+        void bgmAudioContextRef.current.close().catch(() => {})
+      }
+      bgmAudioSourceRef.current = null
+      bgmAudioBufferPromiseRef.current = null
+      bgmAudioContextRef.current = null
+      bgmAudioRef.current = null
+    }
+  }, [])
+
   useEffect(() => () => {
     window.clearTimeout(wishDialogTimerRef.current)
     window.clearTimeout(wishOpenTimerRef.current)
+    window.clearTimeout(bgmStartTimerRef.current)
+    window.clearTimeout(bgmFinishTimerRef.current)
+    bgmAudioSourceRef.current?.stop()
+    bgmAudioSourceRef.current?.disconnect()
     window.clearTimeout(loadingDismissTimerRef.current)
     window.clearTimeout(startPromptTimerRef.current)
     window.clearTimeout(titleRevealTimerRef.current)
@@ -835,6 +888,78 @@ function App() {
     const nextCount = Math.min(10, doroSqueezeCountRef.current + 1)
     doroSqueezeCountRef.current = nextCount
     setDoroSqueezeCount(nextCount)
+    if (nextCount === 10 && !bgmTriggeredRef.current) {
+      bgmTriggeredRef.current = true
+      bgmPlaybackSettledRef.current = false
+      setBgmPromptVisible(true)
+      updateIntroMessage(copy.volumePrompt)
+      // Resume the audio context directly in the user's squeeze gesture so
+      // mobile browsers allow playback when the five-second cue expires.
+      if (bgmAudioContextRef.current?.state === 'suspended') {
+        bgmAudioContextRef.current.resume().catch(error => { bgmLoadErrorRef.current = error })
+      }
+      bgmStartTimerRef.current = window.setTimeout(() => {
+        bgmStartTimerRef.current = null
+        const context = bgmAudioContextRef.current
+        if (context) {
+          const startDecodedBgm = async () => {
+            const buffer = await bgmAudioBufferPromiseRef.current
+            if (!buffer) throw bgmLoadErrorRef.current || new Error('bgm.mp3 解码失败')
+            if (context.state !== 'running') await context.resume()
+            const source = context.createBufferSource()
+            bgmAudioSourceRef.current = source
+            source.buffer = buffer
+            source.connect(context.destination)
+            source.onended = () => finishBgmStep()
+            source.start()
+          }
+          startDecodedBgm().catch(error => {
+            showDebugError('背景音乐播放失败', formatClientError(error))
+            finishBgmStep()
+          })
+          return
+        }
+
+        const audio = bgmAudioRef.current
+        if (!audio) {
+          showDebugError('背景音乐无法播放', 'bgm.mp3 音频对象尚未准备好')
+          finishBgmStep()
+          return
+        }
+
+        const onEnded = () => {
+          audio.removeEventListener('error', onError)
+          finishBgmStep()
+        }
+        const onError = () => {
+          const mediaError = audio.error
+          const error = new Error(`bgm.mp3 加载失败${mediaError ? `（MediaError code ${mediaError.code}）` : ''}`)
+          audio.removeEventListener('ended', onEnded)
+          showDebugError('背景音乐播放失败', formatClientError(error))
+          finishBgmStep()
+        }
+
+        audio.currentTime = 0
+        audio.addEventListener('ended', onEnded)
+        audio.addEventListener('error', onError)
+        audio.play().catch(error => {
+          audio.removeEventListener('ended', onEnded)
+          audio.removeEventListener('error', onError)
+          showDebugError('背景音乐播放失败', formatClientError(error))
+          finishBgmStep()
+        })
+      }, timing.bgmStartDelayMs)
+    }
+  }
+
+  const finishBgmStep = () => {
+    if (bgmPlaybackSettledRef.current) return
+    bgmPlaybackSettledRef.current = true
+    bgmFinishTimerRef.current = window.setTimeout(() => {
+      bgmFinishTimerRef.current = null
+      setBgmPromptVisible(false)
+      setBgmFlowComplete(true)
+    }, timing.bgmAfterPlayDelayMs)
   }
 
   const finishCandleBlow = () => {
@@ -1382,6 +1507,23 @@ function App() {
       setLoadedResources(completed)
     }
     const imageTasks = stickerImages.map(image => preloadStickerImage(image, markResourceComplete))
+    const bgmTask = bgmAudioBufferPromiseRef.current || new Promise(resolve => {
+      const audio = bgmAudioRef.current
+      if (!audio) {
+        resolve()
+        return
+      }
+      const settle = () => {
+        audio.removeEventListener('canplaythrough', settle)
+        audio.removeEventListener('loadeddata', settle)
+        audio.removeEventListener('error', settle)
+        resolve()
+      }
+      audio.addEventListener('canplaythrough', settle)
+      audio.addEventListener('loadeddata', settle)
+      audio.addEventListener('error', settle)
+    })
+    bgmTask.then(markResourceComplete)
     // Only gate the loading card on the font it actually displays. A global
     // font readiness wait also waits for large Japanese faces used later in
     // the page, which makes the first screen feel stalled.
@@ -1508,7 +1650,7 @@ function App() {
           <span className="heading-flower" aria-hidden="true">✿</span>
         </h1>
         <div className="prompt-stack">
-        <p className={'intro' + (introSequence > 0 ? ' intro-updated' : '') + (!loadingDismissed ? ' is-loading' : '')} key={introSequence}>
+        <p className={'intro' + (introSequence > 0 ? ' intro-updated' : '') + (bgmPromptVisible ? ' is-bgm-prompt' : '') + (!loadingDismissed ? ' is-loading' : '')} key={introSequence}>
           <span className="intro-message">
             <span className="visually-hidden">{introMessage}</span>
             <span aria-hidden="true">{Array.from(introMessage).map((character, index) => <span className="intro-character" key={index} style={{ '--char-index': index }}>{character}</span>)}</span>

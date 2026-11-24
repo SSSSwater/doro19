@@ -211,6 +211,7 @@ h1 {
   line-height: 1.8;
   letter-spacing: .06em;
 }
+.intro.is-bgm-prompt { color: #5f9a6d; }
 .intro-message { display: inline-block; }
 .intro-character { display: inline-block; opacity: 0; animation: intro-character-pop var(--motion-intro-character) cubic-bezier(.2,.85,.3,1.2) calc(var(--char-index) * var(--motion-intro-character-stagger)) both; }
 .intro.is-loading .intro-character { animation-play-state: paused; }
