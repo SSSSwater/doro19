@@ -713,6 +713,38 @@ function playCutGlitchSound(context, durationMs) {
   source.onended = () => { source.disconnect(); filter.disconnect(); volume.disconnect() }
 }
 
+function playTypewriterSound(context, message, voice) {
+  if (!context || context.state !== 'running' || !message || !motion.introCharacterMs || !motion.introCharacterStaggerMs || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {}
+  const output = context.createGain()
+  output.connect(context.destination)
+  const start = context.currentTime
+  const step = motion.introCharacterStaggerMs / 1000
+  const clickLength = Math.max(.008, Math.min(.045, motion.introCharacterMs / 1000 * .12))
+  let remaining = Array.from(message).length
+  Array.from(message).forEach((character, index) => {
+    const oscillator = context.createOscillator()
+    const gain = context.createGain()
+    const at = start + index * step
+    const pitch = (voice === 'pink' ? 920 : 470) + (index % 3) * (voice === 'pink' ? 75 : 38)
+    oscillator.type = voice === 'pink' ? 'square' : 'triangle'
+    oscillator.frequency.setValueAtTime(pitch, at)
+    oscillator.frequency.exponentialRampToValueAtTime(pitch * .72, at + clickLength)
+    gain.gain.setValueAtTime(.0001, at)
+    gain.gain.linearRampToValueAtTime(voice === 'pink' ? .009 : .025, at + .003)
+    gain.gain.exponentialRampToValueAtTime(.0001, at + clickLength)
+    oscillator.connect(gain).connect(output)
+    oscillator.start(at)
+    oscillator.stop(at + clickLength)
+    oscillator.onended = () => {
+      oscillator.disconnect()
+      gain.disconnect()
+      remaining -= 1
+      if (remaining === 0) output.disconnect()
+    }
+  })
+  return () => output.disconnect()
+}
+
 function App() {
   const [wishMade, setWishMade] = useState(false)
   const [cakeRevealed, setCakeRevealed] = useState(false)
@@ -888,6 +920,13 @@ function App() {
       bgmAudioRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    if (!loadingDismissed) return undefined
+    return playTypewriterSound(bgmAudioContextRef.current, introMessage, 'green')
+  }, [introMessage, introSequence, loadingDismissed])
+
+  useEffect(() => playTypewriterSound(bgmAudioContextRef.current, cutWarningMessage, 'pink'), [cutWarningMessage, cutWarningSequence])
 
   useEffect(() => () => {
     window.clearTimeout(wishDialogTimerRef.current)
@@ -1351,6 +1390,9 @@ function App() {
 
   const enterPage = () => {
     if (!loadingComplete || loadingExitStarted) return
+    if (bgmAudioContextRef.current?.state === 'suspended') {
+      void bgmAudioContextRef.current.resume().catch(() => {})
+    }
     setLoadingExitStarted(true)
     window.clearTimeout(startPromptTimerRef.current)
     startPromptTimerRef.current = window.setTimeout(() => {
