@@ -461,13 +461,7 @@ h1 {
 .bucket-body::after { content: ''; position: absolute; inset: 12px 13px 15px; border-left: 1px solid #fffaf6b8; border-radius: 50%; }
 .bucket-rim { position: absolute; top: 0; left: 0; width: 100%; height: 25px; border: 2px solid #5c7d9d; border-radius: 50%; box-shadow: inset 0 3px 3px #ffffffb8, 0 3px 4px #637f9b52; }
 .bucket-rim::after { content: ''; position: absolute; inset: 5px 13px 4px; border: 1px solid #9bb3c7; border-radius: 50%; }
-.bucket-hairclip { position: absolute; z-index: 2; top: 16px; left: 32px; width: 27px; height: 13px; margin: 0; border-width: 1.5px; transform: rotate(-26deg); }
-.bucket-ponytail { position: absolute; z-index: 3; display: block; overflow: visible; fill: none; stroke: #385b7d; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 2px 2px #3754724d); }
-.bucket-ponytail .bucket-hair-highlight { stroke: #91a9c2; stroke-width: 2; }
-.bucket-ponytail .bucket-hair-tie { stroke: #56718e; stroke-width: 3; }
-.bucket-ponytail .bucket-hair-spiral { stroke: #304f71; stroke-width: 5; }
-.bucket-ponytail-left { left: -43px; top: 0; width: 66px; height: 52px; }
-.bucket-ponytail-right { right: -32px; top: 8px; width: 68px; height: 92px; }
+.bucket-hairclip { position: absolute; z-index: 2; top: 16px; left: 34px; width: 20px; height: 10px; margin: 0; border-width: 1px; transform: rotate(-26deg); }
 
 .confetti { position: absolute; z-index: 4; top: 46%; left: 50%; width: 1px; height: 1px; pointer-events: none; }
 .confetti span { position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 22px; height: 22px; opacity: 0; color: #b7d8bc; transform: rotate(var(--angle)) translateY(0); animation: burst var(--motion-confetti) ease-out var(--piece-delay) both; }

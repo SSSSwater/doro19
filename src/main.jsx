@@ -1929,23 +1929,6 @@ function App() {
         <div className={'collection-bucket collection-bucket-back' + (revealPhase === 'bucket' ? ' bucket-reveal' : '') + (isComplete ? ' bucket-collected' : '')} ref={bucketRef} aria-hidden="true">
           <div className="bucket-interior" />
           <div className="bucket-back-rim" />
-          <svg className="bucket-ponytail bucket-ponytail-left" viewBox="0 0 64 65" focusable="false">
-            <path d="M58 11C42 10 30 15 22 26C14 37 10 49 8 56" />
-            <path d="M58 13C43 13 32 18 25 29C17 40 14 50 13 58" />
-            <path d="M57 15C43 17 35 22 29 32C22 43 19 52 19 59" />
-            <path d="M55 17C43 20 38 27 33 36C27 46 25 54 25 60" />
-            <path d="M52 19C43 24 40 30 37 39C33 48 31 56 31 60" />
-            <path d="M49 21C43 27 43 34 41 43C39 51 38 57 38 60" />
-            <path className="bucket-hair-highlight" d="M51 13C36 16 27 23 21 35M47 20C39 27 35 37 32 47" />
-            <path className="bucket-hair-tie" d="M30 20C34 22 37 26 40 30M27 23C31 26 34 29 37 33" />
-          </svg>
-          <svg className="bucket-ponytail bucket-ponytail-right" viewBox="0 0 68 92" focusable="false">
-            <path className="bucket-hair-spiral" d="M15 5C37 10 48 25 48 38C48 51 37 57 33 49C30 43 38 39 45 44C57 52 61 65 55 74C50 83 40 84 37 78C35 74 40 71 45 74C53 78 54 84 50 89" />
-            <path d="M11 6C29 11 41 25 42 38C43 46 39 51 34 49M18 6C40 15 52 29 53 42C54 47 52 52 48 54" />
-            <path d="M45 44C60 48 65 63 60 74C56 84 47 87 41 83M48 48C58 57 59 66 54 72" />
-            <path className="bucket-hair-highlight" d="M20 9C37 18 47 30 47 40M48 50C57 57 58 68 52 76M40 77C43 74 48 77 49 82" />
-            <path className="bucket-hair-tie" d="M9 9C15 9 20 11 24 15M8 13C14 14 18 16 21 19" />
-          </svg>
         </div>
         <div className={'collection-bucket collection-bucket-front' + (revealPhase === 'bucket' ? ' bucket-reveal' : '') + (isComplete ? ' bucket-collected' : '')} aria-hidden="true">
           <div className="bucket-body" />

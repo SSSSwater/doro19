@@ -2,6 +2,10 @@ name = "doro19"
 main = "worker.js"
 compatibility_date = "2026-11-23"
 
+[vars]
+WISH_RECIPIENT_EMAIL = "307722647@qq.com"
+WISH_FROM_EMAIL = "Doro19 <wish@minamo.life>"
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"
