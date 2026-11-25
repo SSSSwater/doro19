@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { copy, cssMotionVariables, formatText, motion, timing } from './config'
 import bgmUrl from '../bgm.mp3'
+import volumeReminderDoroUrl from '../doro_bq/optimized/retouch_2026111621491413.webp'
 import './styles.css'
 
 const supportedStickerPattern = /\.(png|jpe?g|webp|gif|avif|svg)$/i
@@ -1736,7 +1737,7 @@ function App() {
       )}
       {volumeReminderVisible && (
         <aside className="volume-reminder" role="status">
-          <CapsuleIcon />
+          <img className="volume-reminder-doro" src={volumeReminderDoroUrl} alt="" />
           <span>{copy.volumeReminder}</span>
           <button className="volume-reminder-close" type="button" aria-label="关闭音量提醒" onClick={() => setVolumeReminderVisible(false)}>×</button>
         </aside>
