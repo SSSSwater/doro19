@@ -76,6 +76,11 @@ button { font: inherit; }
   font-family: 'ZCOOL KuaiLe', 'Microsoft YaHei', sans-serif;
 }
 .loading-screen.is-done { opacity: 0; visibility: hidden; pointer-events: none; transition-delay: 0s, var(--motion-loading-fade); }
+.volume-reminder { position: fixed; right: max(18px, env(safe-area-inset-right)); bottom: max(22px, env(safe-area-inset-bottom)); z-index: 10; display: flex; align-items: center; gap: 12px; width: min(348px, calc(100vw - 36px)); padding: 13px 34px 13px 17px; border: 1px solid #e5b7c4; border-radius: 18px; background: #fffaf9f2; box-shadow: 0 12px 28px #a7808b38, inset 0 1px 0 #fff; color: #855e6a; font-size: 15px; line-height: 1.5; letter-spacing: .02em; animation: volume-reminder-in var(--motion-volume-reminder) cubic-bezier(.16,.82,.24,1) both, volume-reminder-out var(--motion-volume-reminder) ease-in calc(var(--motion-volume-reminder) + var(--wait-volume-reminder-visible)) forwards; }
+.volume-reminder .capsule-icon { width: 24px; height: 13px; border-color: #d99fb0; }
+.volume-reminder-close { position: absolute; top: 5px; right: 7px; display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #aa7b8b; font-size: 19px; line-height: 1; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.volume-reminder-close:hover { background: #f7e6eb; }
+.volume-reminder-close:focus-visible { outline: 2px solid #d99fb0; outline-offset: 1px; }
 .loading-card {
   width: min(328px, 100%);
   padding: 28px 26px 24px;
@@ -104,6 +109,8 @@ button { font: inherit; }
 @keyframes loading-spark { 0%, 100% { transform: scale(.9) rotate(-8deg); opacity: .65; } 50% { transform: scale(1.08) rotate(8deg); opacity: 1; } }
 @keyframes loading-pill-bob { 0%, 100% { transform: translateY(0) rotate(-10deg); } 50% { transform: translateY(-4px) rotate(-4deg); } }
 @keyframes loading-enter-in { from { opacity: 0; transform: translateY(18px) scale(.86); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes volume-reminder-in { from { opacity: 0; transform: translateX(calc(100% + 28px)) scale(.96); } to { opacity: 1; transform: translateX(0) scale(1); } }
+@keyframes volume-reminder-out { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(24px); } }
 
 .hero {
   position: relative;
@@ -573,7 +580,7 @@ h1 {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .loading-pill, .cake-svg, .cake-svg .flame, .candle-count, .doro-reveal, .doro-emerge-confetti span, .doro-pinch-hints, .confetti span, .reveal-confetti span, .birthday-greeting-entering, .potion-line-entering, .candle-reveal, .scene-start-button, .intro-character, .intro-particle-burst > span { animation: none; }
+  .loading-pill, .volume-reminder, .cake-svg, .cake-svg .flame, .candle-count, .doro-reveal, .doro-emerge-confetti span, .doro-pinch-hints, .confetti span, .reveal-confetti span, .birthday-greeting-entering, .potion-line-entering, .candle-reveal, .scene-start-button, .intro-character, .intro-particle-burst > span { animation: none; }
   .candle.candle-flying-away { animation-duration: 1ms; }
   .intro-character { opacity: 1; }
   .doro-pinch-hints { opacity: .85; }

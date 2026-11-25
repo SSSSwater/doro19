@@ -125,7 +125,7 @@ const radialPulseAt = (x, y, bands) => {
   const first = Math.floor(sector) % bands.length
   const blend = sector - Math.floor(sector)
   const level = bands[first] * (1 - blend) + bands[(first + 1) % bands.length] * blend
-  const distance = 9 * level * Math.min(radius / 75, 1)
+  const distance = 13.5 * level * Math.min(radius / 75, 1)
   return { dx: radialX / radius * distance, dy: radialY / radius * distance }
 }
 
@@ -430,8 +430,8 @@ function Cake({ wishMade, collectedCount, showDoro, candleVisible, candleFlyingA
         const to = Math.min(frequencies.length - 1, Math.max(from, Math.ceil(high / binWidth)))
         let sum = 0
         for (let bin = from; bin <= to; bin += 1) sum += frequencies[bin]
-        const level = Math.min(1, Math.sqrt((sum / (to - from + 1)) / 145))
-        smoothed[index] += (level - smoothed[index]) * (level > smoothed[index] ? .42 : .18)
+        const level = Math.min(1, Math.sqrt((sum / (to - from + 1)) / 95))
+        smoothed[index] += (level - smoothed[index]) * (level > smoothed[index] ? .55 : .24)
       }
       setAudioBands(Array.from(smoothed))
     }
@@ -775,6 +775,7 @@ function App() {
   const [loadingComplete, setLoadingComplete] = useState(false)
   const [loadingExitStarted, setLoadingExitStarted] = useState(false)
   const [loadingDismissed, setLoadingDismissed] = useState(false)
+  const [volumeReminderVisible, setVolumeReminderVisible] = useState(false)
   const [revealPhase, setRevealPhase] = useState('idle')
   const [startPromptVisible, setStartPromptVisible] = useState(false)
   const [revealSequence, setRevealSequence] = useState(0)
@@ -926,6 +927,17 @@ function App() {
     return playTypewriterSound(bgmAudioContextRef.current, introMessage, 'green')
   }, [introMessage, introSequence, loadingDismissed])
 
+  useEffect(() => {
+    if (!loadingDismissed) return undefined
+    const showTimer = window.setTimeout(() => setVolumeReminderVisible(true), timing.volumeReminderDelayMs)
+    const hideTimer = window.setTimeout(() => setVolumeReminderVisible(false),
+      timing.volumeReminderDelayMs + timing.volumeReminderVisibleMs + motion.volumeReminderMs * 2)
+    return () => {
+      window.clearTimeout(showTimer)
+      window.clearTimeout(hideTimer)
+    }
+  }, [loadingDismissed])
+
   useEffect(() => playTypewriterSound(bgmAudioContextRef.current, cutWarningMessage, 'pink'), [cutWarningMessage, cutWarningSequence])
 
   useEffect(() => () => {
@@ -999,7 +1011,7 @@ function App() {
             const source = context.createBufferSource()
             const analyser = context.createAnalyser()
             analyser.fftSize = 2048
-            analyser.smoothingTimeConstant = .72
+            analyser.smoothingTimeConstant = .65
             bgmAudioSourceRef.current = source
             bgmAnalyserRef.current = analyser
             source.buffer = buffer
@@ -1721,6 +1733,13 @@ function App() {
             {loadingComplete && <button className={'loading-enter-button' + (pressedButton === 'enter' ? ' is-pressed' : '')} type="button" onPointerDown={pressButton('enter')} onPointerUp={releaseButton('enter')} onPointerLeave={cancelButtonPress('enter')} onPointerCancel={cancelButtonPress('enter')} onClick={clickButton('enter', enterPage)}>{copy.loadingEnter}</button>}
           </div>
         </div>
+      )}
+      {volumeReminderVisible && (
+        <aside className="volume-reminder" role="status">
+          <CapsuleIcon />
+          <span>{copy.volumeReminder}</span>
+          <button className="volume-reminder-close" type="button" aria-label="关闭音量提醒" onClick={() => setVolumeReminderVisible(false)}>×</button>
+        </aside>
       )}
       {stickersReady && revealPhase === 'active' && <FallingStickers bucketRef={bucketRef} onCollect={handleCollect} collectEnabled={!isComplete} isComplete={isComplete} pillMode={candleBlowPhase !== 'lit'} />}
       <div className="page-noise" aria-hidden="true" />
