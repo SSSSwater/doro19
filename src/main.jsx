@@ -613,13 +613,13 @@ function Cake({ wishMade, collectedCount, showDoro, candleVisible, candleFlyingA
             const x = candlePositions[index]
             return (
               <g key={index} className="candle-digit">
-                <path d={'M' + x + ' 119v31'} stroke="#a8c6ad" strokeWidth="5" strokeLinecap="round" />
-                <path d={'M' + x + ' 72v7'} stroke="#866e68" strokeWidth="2.5" strokeLinecap="round" />
+                <path d={'M' + x + ' 128v22'} stroke="#a8c6ad" strokeWidth="5" strokeLinecap="round" />
                 <text x={x} y="122" textAnchor="middle" fontFamily="Georgia, serif" fontSize={digits.length > 2 ? 52 : 70} fontWeight="700" fill={digits.length > 1 && index === 0 ? 'url(#candleWaxPink)' : 'url(#candleWax)'} stroke={digits.length > 1 && index === 0 ? '#d79ead' : '#9fbba4'} strokeWidth="3.5" paintOrder="stroke">{digit}</text>
                 {!wishMade && (
                   <g className="flame" style={{ transformOrigin: x + 'px 72px', animationDelay: (-index * .55) + 's' }}>
                     <path d={'M' + x + ' 72q-16-13 0-35 16 22 0 35Z'} fill="#f6ba73" />
                     <path d={'M' + x + ' 68q-8-9 0-21 8 12 0 21Z'} fill="#fff2ce" />
+                    <path d={'M' + x + ' 64v7'} stroke="#866e68" strokeWidth="2.5" strokeLinecap="round" />
                   </g>
                 )}
                 {wishMade && <path d={'M' + (x + 5) + ' 62q11-8 0-17'} fill="none" stroke="#c5aaa3" strokeWidth="3" strokeLinecap="round" opacity=".65" />}
@@ -1433,7 +1433,7 @@ function App() {
       if (!page || !cake) return
       const target = page.scrollTop + cake.getBoundingClientRect().top - page.getBoundingClientRect().top - 20
       page.scrollTo({ top: target, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
-    }, motion.potionDropMs)
+    }, motion.headingFadeMs)
     window.clearTimeout(revealTimerRef.current)
     window.clearTimeout(revealBucketTimerRef.current)
     window.clearTimeout(revealCandleTimerRef.current)
@@ -1763,9 +1763,9 @@ function App() {
       </button>
 
       <section className="hero" id="top" aria-labelledby="birthday-heading">
-        <h1 id="birthday-heading" lang="ja" aria-hidden={!contentVisible} aria-label={contentVisible ? `${copy.birthdayGreeting} ${copy.potionNameForScreenReaders}` : undefined}>
-          <span className={'birthday-greeting ' + (contentVisible ? 'birthday-greeting-entering' : 'birthday-greeting-hidden')} aria-hidden="true">{copy.birthdayGreeting}</span><br />
-          <span className={'potion-line ' + (contentVisible ? 'potion-line-entering' : 'potion-line-hidden')} aria-hidden="true">
+        <h1 id="birthday-heading" className={contentVisible ? 'birthday-heading-entering' : 'birthday-heading-hidden'} lang="ja" aria-hidden={!contentVisible} aria-label={contentVisible ? `${copy.birthdayGreeting} ${copy.potionNameForScreenReaders}` : undefined}>
+          <span className="birthday-greeting" aria-hidden="true">{copy.birthdayGreeting}</span><br />
+          <span className="potion-line" aria-hidden="true">
             <span className="potion-word">
               <span className="potion-glyph">
                 <span className="potion-capsule" />

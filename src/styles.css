@@ -134,9 +134,9 @@ h1 {
   line-height: 1.2;
 }
 
+.birthday-heading-hidden { visibility: hidden; opacity: 0; }
+.birthday-heading-entering { opacity: 1; animation: birthday-heading-fade var(--motion-heading-fade) ease-out both; }
 .birthday-greeting { display: inline-block; }
-.birthday-greeting-hidden { visibility: hidden; opacity: 0; }
-.birthday-greeting-entering { animation: birthday-greeting-drop var(--motion-potion-drop) cubic-bezier(.2,.78,.25,1) both; }
 
 .potion-word {
   display: inline-flex;
@@ -159,8 +159,6 @@ h1 {
   transform: scale(1.26);
   transform-origin: center center;
 }
-.potion-line-hidden { visibility: hidden; opacity: 0; transform: translateY(-86px) scale(1.26); }
-.potion-line-entering { visibility: visible; animation: potion-line-drop var(--motion-potion-drop) cubic-bezier(.2,.78,.25,1) both; }
 .potion-glyph {
   position: relative;
   display: inline-block;
@@ -530,8 +528,7 @@ h1 {
 @keyframes cake-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 @keyframes flicker { from { transform: rotate(-6deg) scale(.95); } to { transform: rotate(7deg) scale(1.08); } }
 @keyframes burst { 0% { opacity: 1; transform: rotate(var(--angle)) translateY(0) scale(.6); } 55% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--angle)) translateY(calc(var(--distance) * -1)) scale(1); } }
-@keyframes potion-line-drop { 0% { opacity: 0; transform: translateY(-86px) scale(1.26); } 65% { opacity: 1; transform: translateY(8px) scale(1.29); } 100% { opacity: 1; transform: translateY(0) scale(1.26); } }
-@keyframes birthday-greeting-drop { 0% { opacity: 0; transform: translateY(-86px) scale(.92); } 65% { opacity: 1; transform: translateY(8px) scale(1.03); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes birthday-heading-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes candle-rise { 0% { opacity: 0; transform: translateY(245px); } 65% { opacity: 1; transform: translateY(142px); } 100% { opacity: 1; transform: translateY(150px); } }
 @keyframes bucket-rise { 0% { opacity: 0; transform: translate(-50%, 110%); } 70% { opacity: 1; transform: translate(-50%, -7%); } 100% { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes bucket-leave { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, 120%); } }
@@ -580,7 +577,7 @@ h1 {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .loading-pill, .volume-reminder, .cake-svg, .cake-svg .flame, .candle-count, .doro-reveal, .doro-emerge-confetti span, .doro-pinch-hints, .confetti span, .reveal-confetti span, .birthday-greeting-entering, .potion-line-entering, .candle-reveal, .scene-start-button, .intro-character, .intro-particle-burst > span { animation: none; }
+  .loading-pill, .volume-reminder, .cake-svg, .cake-svg .flame, .candle-count, .doro-reveal, .doro-emerge-confetti span, .doro-pinch-hints, .confetti span, .reveal-confetti span, .birthday-heading-entering, .candle-reveal, .scene-start-button, .intro-character, .intro-particle-burst > span { animation: none; }
   .candle.candle-flying-away { animation-duration: 1ms; }
   .intro-character { opacity: 1; }
   .doro-pinch-hints { opacity: .85; }
