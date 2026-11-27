@@ -714,6 +714,29 @@ function playCutGlitchSound(context, durationMs) {
   source.onended = () => { source.disconnect(); filter.disconnect(); volume.disconnect() }
 }
 
+function playCollectionDing(context) {
+  if (!context || context.state === 'closed') return
+  const play = () => {
+    if (context.state !== 'running') return
+    const start = context.currentTime
+    ;[[1320, .12, .38], [1980, .045, .3]].forEach(([frequency, peak, duration]) => {
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      oscillator.type = 'sine'
+      oscillator.frequency.setValueAtTime(frequency, start)
+      gain.gain.setValueAtTime(.0001, start)
+      gain.gain.exponentialRampToValueAtTime(peak, start + .012)
+      gain.gain.exponentialRampToValueAtTime(.0001, start + duration)
+      oscillator.connect(gain).connect(context.destination)
+      oscillator.start(start)
+      oscillator.stop(start + duration)
+      oscillator.onended = () => { oscillator.disconnect(); gain.disconnect() }
+    })
+  }
+  if (context.state === 'suspended') void context.resume().then(play).catch(() => {})
+  else play()
+}
+
 function playTypewriterSound(context, message, voice) {
   if (!context || context.state !== 'running' || !message || !motion.introCharacterMs || !motion.introCharacterStaggerMs || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return () => {}
   const output = context.createGain()
@@ -731,7 +754,7 @@ function playTypewriterSound(context, message, voice) {
     oscillator.frequency.setValueAtTime(pitch, at)
     oscillator.frequency.exponentialRampToValueAtTime(pitch * .72, at + clickLength)
     gain.gain.setValueAtTime(.0001, at)
-    gain.gain.linearRampToValueAtTime(voice === 'pink' ? .009 : .025, at + .003)
+    gain.gain.linearRampToValueAtTime(voice === 'pink' ? .03 : .05, at + .003)
     gain.gain.exponentialRampToValueAtTime(.0001, at + clickLength)
     oscillator.connect(gain).connect(output)
     oscillator.start(at)
@@ -771,6 +794,7 @@ function App() {
   const [wishPointerCancelled, setWishPointerCancelled] = useState(false)
   const [pressedButton, setPressedButton] = useState(null)
   const [collectedIds, setCollectedIds] = useState(() => new Set())
+  const collectedIdsRef = useRef(new Set())
   const [stickersReady, setStickersReady] = useState(stickerImages.length === 0)
   const [loadedResources, setLoadedResources] = useState(0)
   const [loadingComplete, setLoadingComplete] = useState(false)
@@ -1713,12 +1737,18 @@ function App() {
 
   const handleCollect = imageId => {
     if (revealPhase !== 'active') return
-    setCollectedIds(previous => {
-    if (previous.has(imageId)) return previous
-    const next = new Set(previous)
+    if (collectedIdsRef.current.has(imageId)) return
+    const next = new Set(collectedIdsRef.current)
     next.add(imageId)
-    return next
-    })
+    collectedIdsRef.current = next
+    setCollectedIds(next)
+    playCollectionDing(bgmAudioContextRef.current)
+  }
+
+  const handleTestCollect = () => {
+    const next = new Set(stickerImages.map(image => image.id))
+    collectedIdsRef.current = next
+    setCollectedIds(next)
   }
   return (
     <main ref={pageShellRef} className={'page-shell' + (candleBlowPhase === 'dim' && cutPhase !== 'done' ? ' wish-made' : '') + (candleBlowPhase === 'blackout' || cutPhase === 'blackout' ? ' candle-blackout' : '') + (cutGlitch ? ' cut-glitch' : '') + (cutInteractionVisible ? ' cut-interacting' : '')} style={cssMotionVariables}>
@@ -1757,7 +1787,7 @@ function App() {
         onPointerUp={releaseButton('test')}
         onPointerLeave={cancelButtonPress('test')}
         onPointerCancel={cancelButtonPress('test')}
-        onClick={clickButton('test', () => setCollectedIds(new Set(stickerImages.map(image => image.id))))}
+        onClick={clickButton('test', handleTestCollect)}
       >
         {copy.testCollect}
       </button>

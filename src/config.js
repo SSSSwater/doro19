@@ -152,7 +152,7 @@ export const motion = {
   sceneStartEnterMs: readMilliseconds('VITE_MOTION_SCENE_START_ENTER_MS', 600),
   brightnessFadeMs: timing.brightnessRestoreMs,
   candleFlyAwayMs: readMilliseconds('VITE_MOTION_CANDLE_FLY_AWAY_MS', 650),
-  cutGlitchMs: readMilliseconds('VITE_MOTION_CUT_GLITCH_MS', 400),
+  cutGlitchMs: readMilliseconds('VITE_MOTION_CUT_GLITCH_MS', 200),
 }
 
 const toCssMilliseconds = value => `${value}ms`
