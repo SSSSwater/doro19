@@ -310,19 +310,9 @@ h1 {
 .wish-button:active { transform: translateY(2px) scale(.95); box-shadow: 0 4px 9px #8fae9740; }
 .wish-button:disabled { cursor: default; }
 .wish-button:focus,
-.wish-button:focus-visible,
-.test-cake-button:focus,
-.test-cake-button:focus-visible { outline: none !important; -webkit-focus-ring-color: transparent; }
+.wish-button:focus-visible { outline: none !important; -webkit-focus-ring-color: transparent; }
 .clover-icon { display: inline-block; width: 20px; height: 20px; flex: none; color: #b2d3b6; vertical-align: middle; }
 .wish-button > .clover-icon { width: 19px; height: 19px; color: #a8cdaa; }
-.test-cake-button { position: fixed; z-index: 9; left: 18px; bottom: 112px; display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 15px; border: 1px solid #a6c6ad; border-radius: 999px; background: #fffaf8ed; box-shadow: 0 5px 15px #91ad9840; color: #587462; font-size: 14px; font-weight: 600; cursor: pointer; appearance: none; -webkit-appearance: none; outline: none; -webkit-focus-ring-color: transparent; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; touch-action: none; transition: background .2s ease, transform .2s ease, box-shadow .2s ease; }
-.test-cake-button:hover { transform: translateY(-2px); background: #e8f2e8; box-shadow: 0 8px 18px #91ad9850; }
-.test-cake-button:active { transform: translateY(0); }
-.test-cake-button.is-pressed,
-.test-cake-button.is-pressed:hover,
-.test-cake-button.is-pressed:active { transform: translateY(1px) scale(.95); background: #eef7ef; box-shadow: 0 3px 8px #91ad9840; }
-.test-cake-button:focus,
-.test-cake-button:focus-visible { outline: none !important; }
 .sticker-field { position: fixed; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; }
 .falling-sticker { position: absolute; top: 0; width: var(--size); height: var(--size); aspect-ratio: 1; padding: 5px; opacity: var(--sticker-opacity, .78); animation: fall var(--duration) linear var(--delay) 1 forwards; filter: drop-shadow(0 5px 5px #9fbba928); will-change: transform; pointer-events: auto; touch-action: none; cursor: grab; }
 .falling-sticker.left { left: var(--x); }
@@ -570,7 +560,6 @@ h1 {
   .cake-halo { top: 8%; width: 74%; height: 82%; }
   .wish-area { margin-top: 14px; }
   .wish-button { min-height: 52px; }
-  .test-cake-button { left: 14px; bottom: 108px; min-height: 40px; padding-inline: 12px; font-size: 13px; }
   .falling-sticker { --sticker-opacity: .56; width: max(44px, calc(var(--size) * .7)); height: max(44px, calc(var(--size) * .7)); }
   .collection-gallery-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .cut-choice-buttons { gap: 8px; width: calc(100% - 20px); }
@@ -590,7 +579,7 @@ h1 {
   .page-shell.cut-glitch::before { animation-duration: .01ms; }
   .wish-dialog-backdrop, .wish-dialog-backdrop.is-closing, .wish-dialog, .wish-dialog-backdrop.is-closing .wish-dialog { animation: none; }
   .debug-error-backdrop, .debug-error-dialog { animation: none; }
-  .loading-enter-button, .wish-button, .test-cake-button, .candle, .collection-toolbar, .collection-wish-button, .collection-more, .collection-close, .wish-dialog-close, .wish-dialog-submit, .cut-knife, .cut-choice-buttons, .cut-choice-button, .paper-open-entrance, .paper-open-button, .paper-backdrop, .paper-sheet, .doro-hidden-note, .doro-cut-half, .doro-jam-edge, .doro-jam-drip-edge { transition: none; animation: none; }
+  .loading-enter-button, .wish-button, .candle, .collection-toolbar, .collection-wish-button, .collection-more, .collection-close, .wish-dialog-close, .wish-dialog-submit, .cut-knife, .cut-choice-buttons, .cut-choice-button, .paper-open-entrance, .paper-open-button, .paper-backdrop, .paper-sheet, .doro-hidden-note, .doro-cut-half, .doro-jam-edge, .doro-jam-drip-edge { transition: none; animation: none; }
   .cut-phase-knife .cut-knife, .cut-phase-ready .cut-knife, .cut-phase-holding .cut-knife, .cut-phase-warning .cut-knife { opacity: 1; visibility: visible; }
   .cut-phase-knife-moving .cut-knife { visibility: visible; transform: translate(0, 0); }
   .cut-phase-knife-resting .cut-knife { visibility: visible; transform: translate(0, 0); }

@@ -1997,11 +1997,6 @@ function App() {
     playCollectionDing(bgmAudioContextRef.current)
   }
 
-  const handleTestCollect = () => {
-    const next = new Set(stickerImages.map(image => image.id))
-    collectedIdsRef.current = next
-    setCollectedIds(next)
-  }
   return (
     <main ref={pageShellRef} className={'page-shell' + (candleBlowPhase === 'dim' && cutPhase !== 'done' ? ' wish-made' : '') + (candleBlowPhase === 'blackout' || cutPhase === 'blackout' ? ' candle-blackout' : '') + (cutGlitch ? ' cut-glitch' : '') + (cutInteractionVisible ? ' cut-interacting' : '')} style={cssMotionVariables}>
       {!loadingDismissed && (
@@ -2031,19 +2026,6 @@ function App() {
           {confetti.map((piece, index) => <span key={index} style={{ '--angle': piece.angle, '--distance': piece.distance, '--piece-delay': piece.delay }}><CloverIcon /></span>)}
         </div>
       )}
-      <button
-        className={'test-cake-button' + (pressedButton === 'test' ? ' is-pressed' : '')}
-        type="button"
-        aria-label={copy.testCollect}
-        onPointerDown={pressButton('test')}
-        onPointerUp={releaseButton('test')}
-        onPointerLeave={cancelButtonPress('test')}
-        onPointerCancel={cancelButtonPress('test')}
-        onClick={clickButton('test', handleTestCollect)}
-      >
-        {copy.testCollect}
-      </button>
-
       <section className="hero" id="top" aria-labelledby="birthday-heading">
         <h1 id="birthday-heading" className={contentVisible ? 'birthday-heading-entering' : 'birthday-heading-hidden'} lang="ja" aria-hidden={!contentVisible} aria-label={contentVisible ? `${copy.birthdayGreeting} ${copy.potionNameForScreenReaders}` : undefined}>
           <span className="birthday-greeting" aria-hidden="true">{copy.birthdayGreeting}</span><br />

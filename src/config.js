@@ -18,7 +18,6 @@ export const copy = {
   loadingProgressAria: readText('VITE_TEXT_LOADING_PROGRESS_ARIA', '页面加载进度'),
   loadingEnter: readText('VITE_TEXT_LOADING_ENTER_BUTTON', '进去看一眼'),
   volumeReminder: readText('VITE_TEXT_VOLUME_REMINDER', '呃，没开音量的话给我打开音量'),
-  testCollect: readText('VITE_TEXT_TEST_COLLECT_BUTTON', '测试全收集'),
   initialPrompt: readText('VITE_TEXT_PROMPT_INITIAL', '这里会有什么呢'),
   canDragDoro: readText('VITE_TEXT_PROMPT_CAN_DRAG_DORO', '似乎可以拖动旁边的doro？'),
   allCollected: readText('VITE_TEXT_PROMPT_ALL_COLLECTED', '居然全部收集了！会发生什么呢...'),
