@@ -156,7 +156,10 @@ function warpedPath(pathData, deformation, mirror = false, audioBands = null) {
     // Use the left half as the only audio reference. The right half mirrors
     // its displacement so both sides move in sync around the center line.
     const rightSide = !mirror && point.x > 110
-    const pulse = radialPulseAt(mirror || rightSide ? 220 - point.x : point.x, point.y, audioBands)
+    // Ear paths are authored on the left and mirrored by the SVG group, so
+    // their audio sample must stay on the left reference side as well.
+    const audioReferenceX = mirror ? point.x : (rightSide ? 220 - point.x : point.x)
+    const pulse = radialPulseAt(audioReferenceX, point.y, audioBands)
     const mirrorSign = mirror || rightSide ? -1 : 1
     return `${index ? 'L' : 'M'}${(point.x + ((deformation?.dx || 0) * weight + pulse.dx) * mirrorSign).toFixed(2)} ${(point.y + (deformation?.dy || 0) * weight + pulse.dy).toFixed(2)}`
   }).join('') + (/z\s*$/i.test(pathData) ? 'Z' : '')
@@ -1077,6 +1080,7 @@ function App() {
   const contentVisible = revealPhase !== 'idle'
   const cutInteractionVisible = ['knife', 'ready', 'holding', 'knife-moving', 'knife-resting', 'blackout', 'warning'].includes(cutPhase)
   const [collectionOpen, setCollectionOpen] = useState(false)
+  const paperLines = copy.paperMessage.trim().split(/\s+/).filter(Boolean)
   const totalResources = stickerImages.length + 2
   const loadingProgress = Math.min(100, Math.round(loadedResources / totalResources * 100))
 
@@ -1747,6 +1751,8 @@ function App() {
 
   const openPaperDialog = () => {
     restoreAmbientAfterPaper()
+    setSnowMode(false)
+    setFallingStopped(false)
     setPaperDialogOpen(true)
   }
 
@@ -2254,7 +2260,9 @@ function App() {
             if (event.key === 'Tab') { event.preventDefault(); paperCloseRef.current?.focus() }
           }}>
             <button ref={paperCloseRef} className={'wish-dialog-close paper-close' + (pressedButton === 'paper-close' ? ' is-pressed' : '')} type="button" aria-label={copy.paperCloseButtonAria} onPointerDown={pressButton('paper-close')} onPointerUp={releaseButton('paper-close')} onPointerLeave={cancelButtonPress('paper-close')} onPointerCancel={cancelButtonPress('paper-close')} onClick={clickButton('paper-close', closePaperDialog)}>{copy.closeButton}</button>
-            <p className="paper-message">{copy.paperMessage}</p>
+            <p className="paper-message">
+              {paperLines.map((line, index) => <span key={index}>{line}</span>)}
+            </p>
           </section>
         </div>
       )}
