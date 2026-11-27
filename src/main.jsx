@@ -123,11 +123,13 @@ const radialPulseAt = (x, y, bands) => {
   const radialY = y - 111
   const radius = Math.hypot(radialX, radialY)
   if (radius < 1) return { dx: 0, dy: 0 }
-  const sector = (Math.atan2(radialY, radialX) + Math.PI) / (2 * Math.PI) * bands.length
+  // Low frequencies begin above the head; each higher band advances clockwise.
+  const sector = ((Math.atan2(radialY, radialX) + Math.PI / 2 + 2 * Math.PI) % (2 * Math.PI)) / (2 * Math.PI) * bands.length
   const first = Math.floor(sector) % bands.length
   const blend = sector - Math.floor(sector)
-  const level = bands[first] * (1 - blend) + bands[(first + 1) % bands.length] * blend
-  const distance = 13.5 * level * Math.min(radius / 75, 1)
+  const smoothBlend = blend * blend * (3 - 2 * blend)
+  const level = bands[first] * (1 - smoothBlend) + bands[(first + 1) % bands.length] * smoothBlend
+  const distance = 17 * level * Math.min(radius / 75, 1)
   return { dx: radialX / radius * distance, dy: radialY / radius * distance }
 }
 
@@ -426,14 +428,14 @@ function Cake({ wishMade, collectedCount, showDoro, candleVisible, candleFlyingA
       lastSample = now
       bgmAnalyser.getByteFrequencyData(frequencies)
       for (let index = 0; index < bgmBandCount; index += 1) {
-        const low = 55 * (7000 / 55) ** (index / bgmBandCount)
-        const high = 55 * (7000 / 55) ** ((index + 1) / bgmBandCount)
+        const low = 80 * (5000 / 80) ** (index / bgmBandCount)
+        const high = 80 * (5000 / 80) ** ((index + 1) / bgmBandCount)
         const from = Math.min(frequencies.length - 1, Math.max(1, Math.floor(low / binWidth)))
         const to = Math.min(frequencies.length - 1, Math.max(from, Math.ceil(high / binWidth)))
         let sum = 0
         for (let bin = from; bin <= to; bin += 1) sum += frequencies[bin]
-        const level = Math.min(1, Math.sqrt((sum / (to - from + 1)) / 95))
-        smoothed[index] += (level - smoothed[index]) * (level > smoothed[index] ? .55 : .24)
+        const level = Math.min(1, Math.pow(Math.max(0, sum / (to - from + 1) - 2) / 68, .48))
+        smoothed[index] += (level - smoothed[index]) * (level > smoothed[index] ? .68 : .28)
       }
       setAudioBands(Array.from(smoothed))
     }
@@ -477,7 +479,7 @@ function Cake({ wishMade, collectedCount, showDoro, candleVisible, candleFlyingA
     const wasCanceled = event.type === 'pointercancel'
     dragRef.current = null
     setDragTarget(null)
-    if (!wasCanceled) onDoroSqueeze?.()
+    if (!wasCanceled) onDoroSqueeze?.(Boolean(deformationRef.current))
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       deformationRef.current = null
       setDeformation(null)
@@ -720,7 +722,7 @@ function playCollectionDing(context) {
   const play = () => {
     if (context.state !== 'running') return
     const start = context.currentTime
-    ;[[1320, .12, .38], [1980, .045, .3]].forEach(([frequency, peak, duration]) => {
+    ;[[1320, .06, .38], [1980, .022, .3]].forEach(([frequency, peak, duration]) => {
       const oscillator = context.createOscillator()
       const gain = context.createGain()
       oscillator.type = 'sine'
@@ -731,6 +733,32 @@ function playCollectionDing(context) {
       oscillator.connect(gain).connect(context.destination)
       oscillator.start(start)
       oscillator.stop(start + duration)
+      oscillator.onended = () => { oscillator.disconnect(); gain.disconnect() }
+    })
+  }
+  if (context.state === 'suspended') void context.resume().then(play).catch(() => {})
+  else play()
+}
+
+function playSqueezeBoing(context) {
+  if (!context || context.state === 'closed') return
+  const play = () => {
+    if (context.state !== 'running') return
+    const start = context.currentTime
+    ;[['sine', 1, .065], ['triangle', 2, .012]].forEach(([type, harmonic, peak]) => {
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      oscillator.type = type
+      oscillator.frequency.setValueAtTime(360 * harmonic, start)
+      oscillator.frequency.exponentialRampToValueAtTime(190 * harmonic, start + .075)
+      oscillator.frequency.exponentialRampToValueAtTime(260 * harmonic, start + .14)
+      oscillator.frequency.exponentialRampToValueAtTime(210 * harmonic, start + .24)
+      gain.gain.setValueAtTime(.0001, start)
+      gain.gain.exponentialRampToValueAtTime(peak, start + .012)
+      gain.gain.exponentialRampToValueAtTime(.0001, start + .25)
+      oscillator.connect(gain).connect(context.destination)
+      oscillator.start(start)
+      oscillator.stop(start + .25)
       oscillator.onended = () => { oscillator.disconnect(); gain.disconnect() }
     })
   }
@@ -820,7 +848,7 @@ function createAmbientPlayer(context, onError) {
         if (request !== generation) audio.pause()
         return
       }
-      fadeTo(.24, motion.ambientFadeMs)
+      fadeTo(.17, motion.ambientFadeMs)
     }).catch(error => {
       if (!disposed && request === generation) onError(error)
     })
@@ -1104,7 +1132,8 @@ function App() {
     setIntroSequence(previous => previous + 1)
   }
 
-  const handleDoroSqueeze = () => {
+  const handleDoroSqueeze = wasDragged => {
+    if (wasDragged) playSqueezeBoing(bgmAudioContextRef.current)
     const nextCount = Math.min(10, doroSqueezeCountRef.current + 1)
     doroSqueezeCountRef.current = nextCount
     setDoroSqueezeCount(nextCount)
@@ -1134,7 +1163,7 @@ function App() {
             const source = context.createBufferSource()
             const analyser = context.createAnalyser()
             analyser.fftSize = 2048
-            analyser.smoothingTimeConstant = .65
+            analyser.smoothingTimeConstant = .5
             bgmAudioSourceRef.current = source
             bgmAnalyserRef.current = analyser
             source.buffer = buffer
