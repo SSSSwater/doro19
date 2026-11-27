@@ -160,8 +160,13 @@ function warpedPath(pathData, deformation, mirror = false, audioBands = null) {
     // their audio sample must stay on the left reference side as well.
     const audioReferenceX = mirror ? point.x : (rightSide ? 220 - point.x : point.x)
     const pulse = radialPulseAt(audioReferenceX, point.y, audioBands)
-    const mirrorSign = mirror || rightSide ? -1 : 1
-    return `${index ? 'L' : 'M'}${(point.x + ((deformation?.dx || 0) * weight + pulse.dx) * mirrorSign).toFixed(2)} ${(point.y + (deformation?.dy || 0) * weight + pulse.dy).toFixed(2)}`
+    // The right ear is mirrored by its SVG group. Pointer deformation needs
+    // the opposite local direction before that transform, while audio motion
+    // should stay identical locally and be mirrored by the group itself.
+    const deformationSign = mirror ? -1 : 1
+    const audioSign = mirror || !rightSide ? 1 : -1
+    const nextX = point.x + (deformation?.dx || 0) * weight * deformationSign + pulse.dx * audioSign
+    return `${index ? 'L' : 'M'}${nextX.toFixed(2)} ${(point.y + (deformation?.dy || 0) * weight + pulse.dy).toFixed(2)}`
   }).join('') + (/z\s*$/i.test(pathData) ? 'Z' : '')
 }
 
