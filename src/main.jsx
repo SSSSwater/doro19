@@ -834,6 +834,13 @@ function createAmbientPlayer(context, onError) {
     else pauseTimer = window.setTimeout(() => audio.pause(), durationMs)
   }
 
+  const slowAndLowerPitch = () => {
+    audio.preservesPitch = false
+    if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = false
+    if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = false
+    audio.playbackRate = .9
+  }
+
   const dispose = () => {
     disposed = true
     ++generation
@@ -844,7 +851,7 @@ function createAmbientPlayer(context, onError) {
     gain?.disconnect()
   }
 
-  return { play, pause, dispose }
+  return { play, pause, slowAndLowerPitch, dispose }
 }
 
 function App() {
@@ -1198,6 +1205,7 @@ function App() {
   const finishCandleBlow = () => {
     setBlowProgress(0)
     setCandleBlowReady(false)
+    ambientPlayerRef.current?.slowAndLowerPitch()
     setCandleBlowPhase('blackout')
     updateIntroMessage('')
     blackoutTimerRef.current = window.setTimeout(() => {
