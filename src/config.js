@@ -119,6 +119,7 @@ export const motion = {
   loadingSparkMs: readMilliseconds('VITE_MOTION_LOADING_SPARK_MS', 1500),
   loadingEnterMs: readMilliseconds('VITE_MOTION_LOADING_ENTER_MS', 550),
   volumeReminderMs: readMilliseconds('VITE_MOTION_VOLUME_REMINDER_MS', 520),
+  ambientFadeMs: readMilliseconds('VITE_MOTION_AMBIENT_FADE_MS', 1200),
   headingFadeMs: readMilliseconds('VITE_MOTION_HEADING_FADE_MS', readMilliseconds('VITE_MOTION_POTION_DROP_MS', 1800)),
   introCharacterMs: readMilliseconds('VITE_MOTION_INTRO_CHARACTER_MS', 380),
   introCharacterStaggerMs: readMilliseconds('VITE_MOTION_INTRO_CHARACTER_STAGGER_MS', 48),

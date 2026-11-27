@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { copy, cssMotionVariables, formatText, motion, timing } from './config'
 import bgmUrl from '../bgm.mp3'
+import ambientBgmUrl from '../ambient-bgm.mp3'
 import volumeReminderDoroUrl from '../doro_bq/optimized/retouch_2026111621491413.webp'
 import './styles.css'
 
@@ -769,6 +770,83 @@ function playTypewriterSound(context, message, voice) {
   return () => output.disconnect()
 }
 
+function createAmbientPlayer(context, onError) {
+  const audio = new Audio(ambientBgmUrl)
+  audio.loop = true
+  audio.preload = 'auto'
+  const mediaSource = context?.createMediaElementSource(audio)
+  const gain = mediaSource && context.createGain()
+  if (gain) {
+    gain.gain.value = 0
+    mediaSource.connect(gain).connect(context.destination)
+  } else {
+    audio.volume = 0
+  }
+  audio.load()
+
+  let pauseTimer = 0
+  let volumeFrame = 0
+  let generation = 0
+  let disposed = false
+
+  const fadeTo = (target, durationMs) => {
+    window.cancelAnimationFrame(volumeFrame)
+    if (gain) {
+      const now = context.currentTime
+      const level = gain.gain.value
+      gain.gain.cancelScheduledValues(now)
+      gain.gain.setValueAtTime(level, now)
+      gain.gain.linearRampToValueAtTime(target, now + Math.max(.001, durationMs / 1000))
+      return
+    }
+    const start = performance.now()
+    const initial = audio.volume
+    const advance = now => {
+      const progress = durationMs ? Math.min(1, (now - start) / durationMs) : 1
+      audio.volume = initial + (target - initial) * progress
+      if (progress < 1) volumeFrame = window.requestAnimationFrame(advance)
+    }
+    advance(start)
+  }
+
+  const play = () => {
+    if (disposed) return
+    const request = ++generation
+    window.clearTimeout(pauseTimer)
+    if (context?.state === 'suspended') void context.resume().catch(onError)
+    const started = audio.paused ? audio.play() : Promise.resolve()
+    void started.then(() => {
+      if (disposed || request !== generation) {
+        if (request !== generation) audio.pause()
+        return
+      }
+      fadeTo(.24, motion.ambientFadeMs)
+    }).catch(error => {
+      if (!disposed && request === generation) onError(error)
+    })
+  }
+
+  const pause = (durationMs = motion.ambientFadeMs) => {
+    ++generation
+    window.clearTimeout(pauseTimer)
+    fadeTo(0, durationMs)
+    if (durationMs === 0) audio.pause()
+    else pauseTimer = window.setTimeout(() => audio.pause(), durationMs)
+  }
+
+  const dispose = () => {
+    disposed = true
+    ++generation
+    window.clearTimeout(pauseTimer)
+    window.cancelAnimationFrame(volumeFrame)
+    audio.pause()
+    mediaSource?.disconnect()
+    gain?.disconnect()
+  }
+
+  return { play, pause, dispose }
+}
+
 function App() {
   const [wishMade, setWishMade] = useState(false)
   const [cakeRevealed, setCakeRevealed] = useState(false)
@@ -827,6 +905,8 @@ function App() {
   const wishOpenTimerRef = useRef(null)
   const bgmAudioRef = useRef(null)
   const bgmAudioContextRef = useRef(null)
+  const ambientPlayerRef = useRef(null)
+  const ambientFadeStartTimerRef = useRef(null)
   const bgmAudioBufferPromiseRef = useRef(null)
   const bgmAudioSourceRef = useRef(null)
   const bgmAnalyserRef = useRef(null)
@@ -930,8 +1010,13 @@ function App() {
       bgmAudioRef.current = audio
       audio.load()
     }
+    ambientPlayerRef.current = createAmbientPlayer(bgmAudioContextRef.current, error => {
+      showDebugError('常态背景音乐播放失败', formatClientError(error))
+    })
 
     return () => {
+      ambientPlayerRef.current?.dispose()
+      ambientPlayerRef.current = null
       bgmAudioRef.current?.pause()
       bgmAudioSourceRef.current?.stop()
       bgmAudioSourceRef.current?.disconnect()
@@ -970,6 +1055,7 @@ function App() {
     window.clearTimeout(wishOpenTimerRef.current)
     window.clearTimeout(bgmStartTimerRef.current)
     window.clearTimeout(bgmFinishTimerRef.current)
+    window.clearTimeout(ambientFadeStartTimerRef.current)
     bgmAudioSourceRef.current?.stop()
     bgmAudioSourceRef.current?.disconnect()
     bgmAnalyserRef.current?.disconnect()
@@ -1025,8 +1111,13 @@ function App() {
       if (bgmAudioContextRef.current?.state === 'suspended') {
         bgmAudioContextRef.current.resume().catch(error => { bgmLoadErrorRef.current = error })
       }
+      ambientFadeStartTimerRef.current = window.setTimeout(
+        () => ambientPlayerRef.current?.pause(),
+        Math.max(0, timing.bgmStartDelayMs - motion.ambientFadeMs),
+      )
       bgmStartTimerRef.current = window.setTimeout(() => {
         bgmStartTimerRef.current = null
+        ambientPlayerRef.current?.pause(0)
         const context = bgmAudioContextRef.current
         if (context) {
           const startDecodedBgm = async () => {
@@ -1096,6 +1187,7 @@ function App() {
     bgmAnalyserRef.current?.disconnect()
     bgmAnalyserRef.current = null
     setBgmAnalyser(null)
+    ambientPlayerRef.current?.play()
     bgmFinishTimerRef.current = window.setTimeout(() => {
       bgmFinishTimerRef.current = null
       setBgmPromptVisible(false)
@@ -1430,6 +1522,7 @@ function App() {
     if (bgmAudioContextRef.current?.state === 'suspended') {
       void bgmAudioContextRef.current.resume().catch(() => {})
     }
+    ambientPlayerRef.current?.play()
     setLoadingExitStarted(true)
     window.clearTimeout(startPromptTimerRef.current)
     startPromptTimerRef.current = window.setTimeout(() => {
