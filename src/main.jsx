@@ -1287,6 +1287,7 @@ function App() {
             cutRestTimerRef.current = null
             setDoroCut(true)
             updateIntroMessage('')
+            ambientPlayerRef.current?.pause(0)
             setCutPhase('blackout')
             cutBlackoutTimerRef.current = window.setTimeout(() => {
               cutBlackoutTimerRef.current = null
@@ -1357,6 +1358,7 @@ function App() {
         updateIntroMessage(copy.cutWarningRecovery)
         cutWarningTimerRef.current = window.setTimeout(() => {
           cutWarningTimerRef.current = null
+          ambientPlayerRef.current?.pause(0)
           playCutGlitchSound(cutGlitchAudioRef.current, motion.cutGlitchMs)
           setCutGlitch(true)
           setCutWarningMessage('')
