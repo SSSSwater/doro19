@@ -257,10 +257,10 @@ h1 {
 .cake-svg { position: relative; z-index: 1; display: block; width: 100%; height: auto; overflow: visible; pointer-events: auto; user-select: none; touch-action: none; animation: cake-entrance var(--motion-cake-entrance) cubic-bezier(.2,.75,.25,1) both, cake-float var(--motion-cake-float) ease-in-out .9s infinite; }
 .page-shell.cut-interacting .cake-svg { animation-play-state: paused; }
 .cake-svg .flame { animation: flicker var(--motion-candle-flicker) ease-in-out infinite alternate; }
-.candle-count { transform-origin: 310px 145px; animation: candle-count-pop var(--motion-candle-count) cubic-bezier(.18,.85,.27,1.2) both; }
+.candle-count { transform-origin: 310px 145px; animation: candle-count-pop var(--motion-candle-count) ease-out both; }
 .candle { transition: transform var(--motion-candle-transition) cubic-bezier(.2,.8,.25,1); }
 .candle-on-cake { transform: translateY(150px); }
-.candle-reveal { animation: candle-rise var(--motion-candle-rise) cubic-bezier(.2,.78,.25,1) both; }
+.candle-reveal { animation: candle-rise var(--motion-candle-rise) ease-out both; }
 .candle-on-doro { transform: translateY(0); }
 .candle.candle-flying-away { animation: candle-fly-away var(--motion-candle-fly-away) cubic-bezier(.35,.15,.6,.9) both; }
 .doro-reveal { transform-box: fill-box; transform-origin: center bottom; animation: doro-reveal var(--motion-doro-reveal) cubic-bezier(.22,.8,.25,1) both; }
@@ -330,8 +330,9 @@ h1 {
 .falling-sticker img { display: block; width: 100%; height: 100%; object-fit: contain; user-select: none; transform: rotate(var(--rotation)) scale(var(--scale, 1)); }
 .pill-art { display: block; width: 76%; height: 32%; margin: 34% auto; border: 2px solid #e7a1b5; border-radius: 999px; background: linear-gradient(90deg, #fffdfd 0 47%, #f0a7bb 49% 100%); box-shadow: inset 0 1px 1px #ffffffeb, 0 5px 8px #b8798b4a; transform: rotate(var(--rotation)) scale(var(--scale, 1)); }
 .pill-art::after { content: ''; display: block; width: 22%; height: 34%; margin: 19% 17%; border-radius: 50%; background: #ffffffd9; filter: blur(1px); }
+.snowflake-art { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; font-size: 55px; line-height: 1; text-shadow: 0 2px 8px #bdd8ea, 0 0 14px #fff; transform: rotate(var(--rotation)) scale(var(--scale, 1)); }
 .loading-pill { --rotation: -10deg; width: 74px; height: 34px; margin: 0 auto 20px; animation: loading-pill-bob var(--motion-loading-pill) ease-in-out infinite; }
-.falling-sticker.pill-mode { pointer-events: none; }
+.falling-sticker.pill-mode, .falling-sticker.snow-mode { pointer-events: none; }
 .falling-sticker.dragging, .falling-sticker.falling-to-bucket, .falling-sticker.fading, .falling-sticker.released { position: fixed; z-index: 2; }
 .falling-sticker.dragging { opacity: .96; filter: drop-shadow(0 11px 12px #7e9a8070); animation: none; cursor: grabbing; }
 .falling-sticker.fading { pointer-events: none; }
@@ -456,7 +457,7 @@ h1 {
 .paper-close { top: 15px; right: 17px; }
 .paper-message { position: relative; margin: 0; max-width: 100%; color: #657965; font-size: clamp(23px, 5vw, 30px); font-weight: 700; line-height: 1.8; letter-spacing: .09em; text-align: center; text-wrap: balance; }
 .collection-bucket { position: fixed; bottom: 18px; left: 50%; width: 184px; height: 83px; transform: translateX(-50%); pointer-events: none; }
-.collection-bucket.bucket-reveal { animation: bucket-rise var(--motion-bucket-rise) cubic-bezier(.2,.8,.25,1) both; }
+.collection-bucket.bucket-reveal { animation: bucket-rise var(--motion-bucket-rise) ease-out both; }
 .collection-bucket.bucket-collected { animation: bucket-leave var(--motion-bucket-leave) cubic-bezier(.2,.75,.25,1) both; }
 .collection-bucket-back { z-index: 4; filter: drop-shadow(0 10px 10px #9cab9a5a); }
 .collection-bucket-front { z-index: 6; }
@@ -515,7 +516,7 @@ h1 {
 
 @keyframes fade-doro { from { opacity: var(--sticker-opacity, .78); transform: translate3d(0, var(--travel-y), 0) scale(1); } to { opacity: 0; transform: translate3d(0, var(--travel-y), 0) scale(.65); } }
 @keyframes release-doro { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, var(--release-y), 0); } }
-@keyframes candle-count-pop { 0% { opacity: .35; transform: translateY(9px) scale(.8); } 60% { opacity: 1; transform: translateY(-4px) scale(1.1); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes candle-count-pop { from { opacity: .35; transform: translateY(9px) scale(.8); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes doro-reveal { 0% { opacity: 0; transform: translateY(55px) scale(.72) rotate(-5deg); } 100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); } }
 @keyframes wish-backdrop-in { from { opacity: 0; backdrop-filter: blur(0); } to { opacity: 1; backdrop-filter: blur(5px); } }
 @keyframes wish-backdrop-out { from { opacity: 1; backdrop-filter: blur(5px); } to { opacity: 0; backdrop-filter: blur(0); } }
@@ -529,8 +530,8 @@ h1 {
 @keyframes flicker { from { transform: rotate(-6deg) scale(.95); } to { transform: rotate(7deg) scale(1.08); } }
 @keyframes burst { 0% { opacity: 1; transform: rotate(var(--angle)) translateY(0) scale(.6); } 55% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--angle)) translateY(calc(var(--distance) * -1)) scale(1); } }
 @keyframes birthday-heading-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes candle-rise { 0% { opacity: 0; transform: translateY(245px); } 65% { opacity: 1; transform: translateY(142px); } 100% { opacity: 1; transform: translateY(150px); } }
-@keyframes bucket-rise { 0% { opacity: 0; transform: translate(-50%, 110%); } 70% { opacity: 1; transform: translate(-50%, -7%); } 100% { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes candle-rise { from { opacity: 0; transform: translateY(245px); } to { opacity: 1; transform: translateY(150px); } }
+@keyframes bucket-rise { from { opacity: 0; transform: translate(-50%, 110%); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes bucket-leave { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, 120%); } }
 @keyframes scene-start-in { from { opacity: 0; transform: translateY(22px) scale(.84); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes intro-character-pop { 0% { opacity: 0; transform: translateY(9px) scale(.65); } 70% { opacity: 1; transform: translateY(-2px) scale(1.09); } 100% { opacity: 1; transform: translateY(0) scale(1); } }

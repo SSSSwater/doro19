@@ -93,8 +93,9 @@ const preloadStickerImage = ({ src }, onComplete) => new Promise(resolve => {
   image.src = src
 })
 
-const createSticker = (id, delay = 0) => ({
+const createSticker = (id, kind = 'doro', delay = 0) => ({
   id,
+  kind,
   side: Math.random() < .5 ? 'left' : 'right',
   x: 1 + Math.random() * 14,
   restY: 4 + Math.random() * 78,
@@ -238,6 +239,7 @@ function CakeCapsule({ x, y, rotate = 0, scale = 1 }) {
 }
 
 function FallingSticker({ sticker, bucketRef, onCollect, collectEnabled, onRemove, pillMode }) {
+  const visualKind = pillMode ? 'pill' : sticker.kind
   const [appearance, setAppearance] = useState(() => randomStickerAppearance())
   const [drag, setDrag] = useState(null)
   const dragRef = useRef(null)
@@ -332,7 +334,7 @@ function FallingSticker({ sticker, bucketRef, onCollect, collectEnabled, onRemov
 
   return (
     <span
-      className={'falling-sticker ' + sticker.side + (pillMode ? ' pill-mode' : '') + (drag ? ' ' + drag.phase : '')}
+      className={'falling-sticker ' + sticker.side + (visualKind === 'pill' ? ' pill-mode' : visualKind === 'snow' ? ' snow-mode' : '') + (drag ? ' ' + drag.phase : '')}
       style={{
         '--x': sticker.x + 'vw',
         '--rest-y': sticker.restY + 'vh',
@@ -362,19 +364,19 @@ function FallingSticker({ sticker, bucketRef, onCollect, collectEnabled, onRemov
         if (event.animationName === 'release-doro') finishLanding()
       }}
     >
-      {pillMode ? <span className="pill-art" aria-hidden="true" /> : <img src={appearance.image.src} alt="" draggable="false" />}
+      {visualKind === 'pill' ? <span className="pill-art" aria-hidden="true" /> : visualKind === 'snow' ? <span className="snowflake-art" aria-hidden="true">❄️</span> : <img src={appearance.image.src} alt="" draggable="false" />}
     </span>
   )
 }
 
-function FallingStickers({ bucketRef, onCollect, collectEnabled, isComplete, pillMode }) {
+function FallingStickers({ bucketRef, onCollect, collectEnabled, isComplete, pillMode, snowMode }) {
   const nextIdRef = useRef(0)
   const [activeStickers, setActiveStickers] = useState([])
 
   const removeSticker = id => setActiveStickers(current => current.filter(sticker => sticker.id !== id))
 
   useEffect(() => {
-    setActiveStickers(current => [...current, createSticker(nextIdRef.current++)])
+    setActiveStickers(current => [...current, createSticker(nextIdRef.current++, snowMode ? 'snow' : 'doro')])
   }, [])
 
   useEffect(() => {
@@ -382,13 +384,13 @@ function FallingStickers({ bucketRef, onCollect, collectEnabled, isComplete, pil
     let timer
     const spawn = () => {
       const id = nextIdRef.current++
-      setActiveStickers(current => [...current, createSticker(id)])
+      setActiveStickers(current => [...current, createSticker(id, snowMode ? 'snow' : 'doro')])
       if (!isComplete) interval = Math.max(timing.stickerSpawnMinimumMs, interval - timing.stickerSpawnAccelerationMs)
       timer = window.setTimeout(spawn, interval)
     }
     timer = window.setTimeout(spawn, interval)
     return () => window.clearTimeout(timer)
-  }, [isComplete, pillMode])
+  }, [isComplete, pillMode, snowMode])
 
   return (
     <div className="sticker-field" aria-hidden="true">
@@ -745,7 +747,7 @@ function playSqueezeBoing(context) {
   const play = () => {
     if (context.state !== 'running') return
     const start = context.currentTime
-    ;[['sine', 1, .065], ['triangle', 2, .012]].forEach(([type, harmonic, peak]) => {
+    ;[['sine', 1, .12], ['triangle', 2, .024]].forEach(([type, harmonic, peak]) => {
       const oscillator = context.createOscillator()
       const gain = context.createGain()
       oscillator.type = type
@@ -882,6 +884,67 @@ function createAmbientPlayer(context, onError) {
   return { play, pause, slowAndLowerPitch, dispose }
 }
 
+function createWindPlayer(context) {
+  const duration = 7
+  const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate)
+  const samples = buffer.getChannelData(0)
+  let breeze = 0
+  for (let index = 0; index < samples.length; index += 1) {
+    breeze = (breeze + (Math.random() * 2 - 1) * .06) / 1.06
+    samples[index] = breeze * 3
+  }
+  const edge = Math.ceil(context.sampleRate * .04)
+  for (let index = 0; index < edge; index += 1) {
+    const fade = index / edge
+    samples[index] *= fade
+    samples[samples.length - 1 - index] *= fade
+  }
+  const source = context.createBufferSource()
+  const filter = context.createBiquadFilter()
+  const gust = context.createGain()
+  const master = context.createGain()
+  const lfo = context.createOscillator()
+  const depth = context.createGain()
+  source.buffer = buffer
+  source.loop = true
+  filter.type = 'bandpass'
+  filter.frequency.value = 480
+  filter.Q.value = .35
+  gust.gain.value = .11
+  master.gain.value = 0
+  lfo.type = 'sine'
+  lfo.frequency.value = .13
+  depth.gain.value = .035
+  source.connect(filter).connect(gust).connect(master).connect(context.destination)
+  lfo.connect(depth).connect(gust.gain)
+  let started = false
+  let disposed = false
+  const play = () => {
+    const start = () => {
+      if (started || disposed || context.state !== 'running') return
+      started = true
+      const now = context.currentTime
+      master.gain.setValueAtTime(0, now)
+      master.gain.linearRampToValueAtTime(1, now + 1.5)
+      source.start(now)
+      lfo.start(now)
+    }
+    if (context.state === 'suspended') void context.resume().then(start).catch(() => {})
+    else start()
+  }
+  const dispose = () => {
+    disposed = true
+    if (started) { source.stop(); lfo.stop() }
+    source.disconnect()
+    filter.disconnect()
+    gust.disconnect()
+    master.disconnect()
+    lfo.disconnect()
+    depth.disconnect()
+  }
+  return { play, dispose }
+}
+
 function App() {
   const [wishMade, setWishMade] = useState(false)
   const [cakeRevealed, setCakeRevealed] = useState(false)
@@ -922,6 +985,8 @@ function App() {
   const [bgmPromptVisible, setBgmPromptVisible] = useState(false)
   const [bgmFlowComplete, setBgmFlowComplete] = useState(false)
   const [bgmAnalyser, setBgmAnalyser] = useState(null)
+  const [snowMode, setSnowMode] = useState(false)
+  const [fallingStopped, setFallingStopped] = useState(false)
   const [candleFlyingAway, setCandleFlyingAway] = useState(false)
   const [candleGone, setCandleGone] = useState(false)
   const [doroVisible, setDoroVisible] = useState(false)
@@ -941,6 +1006,7 @@ function App() {
   const bgmAudioRef = useRef(null)
   const bgmAudioContextRef = useRef(null)
   const ambientPlayerRef = useRef(null)
+  const windPlayerRef = useRef(null)
   const ambientFadeStartTimerRef = useRef(null)
   const bgmAudioBufferPromiseRef = useRef(null)
   const bgmAudioSourceRef = useRef(null)
@@ -1052,6 +1118,8 @@ function App() {
     return () => {
       ambientPlayerRef.current?.dispose()
       ambientPlayerRef.current = null
+      windPlayerRef.current?.dispose()
+      windPlayerRef.current = null
       bgmAudioRef.current?.pause()
       bgmAudioSourceRef.current?.stop()
       bgmAudioSourceRef.current?.disconnect()
@@ -1132,6 +1200,13 @@ function App() {
     setIntroSequence(previous => previous + 1)
   }
 
+  const startWind = () => {
+    const context = bgmAudioContextRef.current
+    if (!context || context.state === 'closed') return
+    windPlayerRef.current ||= createWindPlayer(context)
+    windPlayerRef.current.play()
+  }
+
   const handleDoroSqueeze = wasDragged => {
     if (wasDragged) playSqueezeBoing(bgmAudioContextRef.current)
     const nextCount = Math.min(10, doroSqueezeCountRef.current + 1)
@@ -1171,6 +1246,7 @@ function App() {
             analyser.connect(context.destination)
             source.onended = () => finishBgmStep()
             source.start()
+            setSnowMode(true)
             setBgmAnalyser(analyser)
           }
           startDecodedBgm().catch(error => {
@@ -1202,7 +1278,7 @@ function App() {
         audio.currentTime = 0
         audio.addEventListener('ended', onEnded)
         audio.addEventListener('error', onError)
-        audio.play().catch(error => {
+        audio.play().then(() => setSnowMode(true)).catch(error => {
           audio.removeEventListener('ended', onEnded)
           audio.removeEventListener('error', onError)
           showDebugError('背景音乐播放失败', formatClientError(error))
@@ -1215,6 +1291,7 @@ function App() {
   const finishBgmStep = () => {
     if (bgmPlaybackSettledRef.current) return
     bgmPlaybackSettledRef.current = true
+    setSnowMode(false)
     if (bgmAudioSourceRef.current) {
       bgmAudioSourceRef.current.onended = null
       bgmAudioSourceRef.current.disconnect()
@@ -1315,8 +1392,10 @@ function App() {
           cutRestTimerRef.current = window.setTimeout(() => {
             cutRestTimerRef.current = null
             setDoroCut(true)
+            setFallingStopped(true)
             updateIntroMessage('')
             ambientPlayerRef.current?.pause(0)
+            startWind()
             setCutPhase('blackout')
             cutBlackoutTimerRef.current = window.setTimeout(() => {
               cutBlackoutTimerRef.current = null
@@ -1388,6 +1467,8 @@ function App() {
         cutWarningTimerRef.current = window.setTimeout(() => {
           cutWarningTimerRef.current = null
           ambientPlayerRef.current?.pause(0)
+          setFallingStopped(true)
+          startWind()
           playCutGlitchSound(cutGlitchAudioRef.current, motion.cutGlitchMs)
           setCutGlitch(true)
           setCutWarningMessage('')
@@ -1904,7 +1985,7 @@ function App() {
           <button className="volume-reminder-close" type="button" aria-label="关闭音量提醒" onClick={() => setVolumeReminderVisible(false)}>×</button>
         </aside>
       )}
-      {stickersReady && revealPhase === 'active' && <FallingStickers bucketRef={bucketRef} onCollect={handleCollect} collectEnabled={!isComplete} isComplete={isComplete} pillMode={candleBlowPhase !== 'lit'} />}
+      {stickersReady && revealPhase === 'active' && !fallingStopped && <FallingStickers bucketRef={bucketRef} onCollect={handleCollect} collectEnabled={!isComplete} isComplete={isComplete} pillMode={candleBlowPhase !== 'lit'} snowMode={snowMode} />}
       <div className="page-noise" aria-hidden="true" />
       {revealPhase === 'revealing' && (
         <div className="reveal-confetti" aria-hidden="true" key={revealSequence}>
