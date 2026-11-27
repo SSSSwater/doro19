@@ -263,7 +263,7 @@ h1 {
 .candle-reveal { animation: candle-rise var(--motion-candle-rise) cubic-bezier(.2,.78,.25,1) both; }
 .candle-on-doro { transform: translateY(0); }
 .candle.candle-flying-away { animation: candle-fly-away var(--motion-candle-fly-away) cubic-bezier(.35,.15,.6,.9) both; }
-.doro-reveal { transform-box: fill-box; transform-origin: center bottom; animation: doro-reveal var(--motion-doro-reveal) cubic-bezier(.2,.75,.2,1) both; }
+.doro-reveal { transform-box: fill-box; transform-origin: center bottom; animation: doro-reveal var(--motion-doro-reveal) cubic-bezier(.22,.8,.25,1) both; }
 .doro-pinch-hints { pointer-events: none; opacity: 0; animation: doro-hints-in var(--motion-doro-hints-fade) ease-out both, doro-hints-pulse var(--motion-doro-hints-pulse) ease-in-out var(--motion-doro-hints-fade) infinite; }
 .doro-pinch-hints.is-fading { animation: doro-hints-out var(--motion-doro-hints-fade) ease-out both; }
 .doro-head { cursor: grab; }
@@ -516,7 +516,7 @@ h1 {
 @keyframes fade-doro { from { opacity: var(--sticker-opacity, .78); transform: translate3d(0, var(--travel-y), 0) scale(1); } to { opacity: 0; transform: translate3d(0, var(--travel-y), 0) scale(.65); } }
 @keyframes release-doro { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, var(--release-y), 0); } }
 @keyframes candle-count-pop { 0% { opacity: .35; transform: translateY(9px) scale(.8); } 60% { opacity: 1; transform: translateY(-4px) scale(1.1); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
-@keyframes doro-reveal { 0% { opacity: 0; transform: translateY(55px) scale(.55) rotate(-8deg); } 65% { opacity: 1; transform: translateY(-8px) scale(1.06) rotate(2deg); } 100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); } }
+@keyframes doro-reveal { 0% { opacity: 0; transform: translateY(55px) scale(.72) rotate(-5deg); } 100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); } }
 @keyframes wish-backdrop-in { from { opacity: 0; backdrop-filter: blur(0); } to { opacity: 1; backdrop-filter: blur(5px); } }
 @keyframes wish-backdrop-out { from { opacity: 1; backdrop-filter: blur(5px); } to { opacity: 0; backdrop-filter: blur(0); } }
 @keyframes wish-dialog-in { from { opacity: 0; transform: translateY(36px) scale(.88); } to { opacity: 1; transform: translateY(0) scale(1); } }
