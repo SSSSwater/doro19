@@ -96,7 +96,7 @@ export const timing = {
   cutWarningAfterLastMs: readMilliseconds('VITE_WAIT_CUT_WARNING_AFTER_LAST_MS', 2000),
   cutWarningRecoveryMs: readMilliseconds('VITE_WAIT_CUT_WARNING_RECOVERY_MS', 4000),
   pageStartPromptMs: readMilliseconds('VITE_WAIT_PAGE_START_PROMPT_MS', 2000),
-  volumeReminderDelayMs: readMilliseconds('VITE_WAIT_VOLUME_REMINDER_DELAY_MS', 1000),
+  volumeReminderDelayMs: readMilliseconds('VITE_WAIT_VOLUME_REMINDER_DELAY_MS', 1500),
   volumeReminderVisibleMs: readMilliseconds('VITE_WAIT_VOLUME_REMINDER_VISIBLE_MS', 5000),
   loadingFadeMs: readMilliseconds('VITE_WAIT_LOADING_FADE_MS', 700),
   wishDialogBounceMs: readMilliseconds('VITE_WAIT_WISH_DIALOG_BOUNCE_MS', 220),

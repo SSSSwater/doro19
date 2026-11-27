@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { copy, cssMotionVariables, formatText, motion, timing } from './config'
 import bgmUrl from '../bgm.mp3'
 import ambientBgmUrl from '../ambient-bgm.mp3'
-import volumeReminderDoroUrl from '../doro_bq/optimized/retouch_2026111621491413.webp'
+import volumeReminderDoroUrl from '../doro_bq/optimized/retouch_2026111621494445.webp'
 import './styles.css'
 
 const supportedStickerPattern = /\.(png|jpe?g|webp|gif|avif|svg)$/i
@@ -153,8 +153,11 @@ function warpedPath(pathData, deformation, mirror = false, audioBands = null) {
   }
   return points.map((point, index) => {
     const weight = influence(point)
-    const pulse = radialPulseAt(mirror ? 220 - point.x : point.x, point.y, audioBands)
-    const mirrorSign = mirror ? -1 : 1
+    // Use the left half as the only audio reference. The right half mirrors
+    // its displacement so both sides move in sync around the center line.
+    const rightSide = !mirror && point.x > 110
+    const pulse = radialPulseAt(mirror || rightSide ? 220 - point.x : point.x, point.y, audioBands)
+    const mirrorSign = mirror || rightSide ? -1 : 1
     return `${index ? 'L' : 'M'}${(point.x + ((deformation?.dx || 0) * weight + pulse.dx) * mirrorSign).toFixed(2)} ${(point.y + (deformation?.dy || 0) * weight + pulse.dy).toFixed(2)}`
   }).join('') + (/z\s*$/i.test(pathData) ? 'Z' : '')
 }
@@ -871,6 +874,13 @@ function createAmbientPlayer(context, onError) {
     audio.playbackRate = .9
   }
 
+  const restoreNormalPitch = () => {
+    audio.preservesPitch = true
+    if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = true
+    if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = true
+    audio.playbackRate = 1
+  }
+
   const dispose = () => {
     disposed = true
     ++generation
@@ -881,7 +891,7 @@ function createAmbientPlayer(context, onError) {
     gain?.disconnect()
   }
 
-  return { play, pause, slowAndLowerPitch, dispose }
+  return { play, pause, slowAndLowerPitch, restoreNormalPitch, dispose }
 }
 
 function createWindPlayer(context) {
@@ -910,7 +920,7 @@ function createWindPlayer(context) {
   filter.type = 'bandpass'
   filter.frequency.value = 480
   filter.Q.value = .35
-  gust.gain.value = .11
+  gust.gain.value = .075
   master.gain.value = 0
   lfo.type = 'sine'
   lfo.frequency.value = .13
@@ -932,6 +942,13 @@ function createWindPlayer(context) {
     if (context.state === 'suspended') void context.resume().then(start).catch(() => {})
     else start()
   }
+  const pause = (durationMs = motion.ambientFadeMs) => {
+    if (!started || disposed) return
+    const now = context.currentTime
+    master.gain.cancelScheduledValues(now)
+    master.gain.setValueAtTime(master.gain.value, now)
+    master.gain.linearRampToValueAtTime(0, now + Math.max(.001, durationMs / 1000))
+  }
   const dispose = () => {
     disposed = true
     if (started) { source.stop(); lfo.stop() }
@@ -942,7 +959,7 @@ function createWindPlayer(context) {
     lfo.disconnect()
     depth.disconnect()
   }
-  return { play, dispose }
+  return { play, pause, dispose }
 }
 
 function App() {
@@ -1205,6 +1222,12 @@ function App() {
     if (!context || context.state === 'closed') return
     windPlayerRef.current ||= createWindPlayer(context)
     windPlayerRef.current.play()
+  }
+
+  const restoreAmbientAfterPaper = () => {
+    windPlayerRef.current?.pause(motion.ambientFadeMs)
+    ambientPlayerRef.current?.restoreNormalPitch()
+    ambientPlayerRef.current?.play()
   }
 
   const handleDoroSqueeze = wasDragged => {
@@ -1722,6 +1745,11 @@ function App() {
     paperOpenRef.current?.focus()
   }
 
+  const openPaperDialog = () => {
+    restoreAmbientAfterPaper()
+    setPaperDialogOpen(true)
+  }
+
   useEffect(() => {
     if (paperDialogOpen) paperCloseRef.current?.focus()
   }, [paperDialogOpen])
@@ -2150,7 +2178,7 @@ function App() {
             onPointerUp={releaseButton('paper-open')}
             onPointerLeave={cancelButtonPress('paper-open')}
             onPointerCancel={cancelButtonPress('paper-open')}
-            onClick={clickButton('paper-open', () => setPaperDialogOpen(true))}
+            onClick={clickButton('paper-open', openPaperDialog)}
           >{copy.paperOpenButton}</button>
         </div>
       )}
