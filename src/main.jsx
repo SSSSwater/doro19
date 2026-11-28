@@ -928,7 +928,7 @@ function createWindPlayer(context) {
   filter.type = 'bandpass'
   filter.frequency.value = 480
   filter.Q.value = .35
-  gust.gain.value = .075
+  gust.gain.value = .05
   master.gain.value = 0
   lfo.type = 'sine'
   lfo.frequency.value = .13

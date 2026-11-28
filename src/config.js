@@ -37,7 +37,7 @@ export const copy = {
   paperHint: readText('VITE_TEXT_PROMPT_PAPER_HINT', '有一张纸条？'),
   paperOpenButton: readText('VITE_TEXT_PAPER_OPEN_BUTTON', '查看纸条'),
   paperCloseButtonAria: readText('VITE_TEXT_PAPER_CLOSE_BUTTON_ARIA', '关闭纸条'),
-  paperMessage: readText('VITE_TEXT_PAPER_MESSAGE', '迟到的生日快乐呀宝宝，总算是把这一个网页流程过完了hhh，本来其实想搞点恐怖氛围的后来还是算了><那么草莓蛋糕会在哪里呢？'),
+  paperMessage: readText('VITE_TEXT_PAPER_MESSAGE', '迟到的生日快乐呀宝宝 总算是把这一个网页流程过完了hhh 本来其实想搞点恐怖氛围的后来还是算了>< 那么草莓蛋糕会在哪里呢？床左边的床头柜上的物品似乎摆得有点奇怪？'),
   cutInteractionAria: readText('VITE_TEXT_CUT_INTERACTION_ARIA', '切蛋糕互动'),
   cakeDragAria: readText('VITE_TEXT_CAKE_DRAG_ARIA', '拖拽多罗猫的脸和耳朵'),
   revealStartButton: readText('VITE_TEXT_REVEAL_START_BUTTON', '点点看'),
